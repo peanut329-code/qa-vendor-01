@@ -143,8 +143,61 @@ export const SCAR_STATUS_LABELS: Record<ScarStatus, string> = {
 
 export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   super_admin: ["*"],
-  admin: ["dashboard.view", "suppliers.*", "evaluations.*", "reports.*", "users.*", "settings.*", "scar.*"],
-  manager: ["dashboard.view", "suppliers.view", "evaluations.view", "evaluations.review", "reports.*", "scar.*"],
+  admin: ["dashboard.view", "suppliers.*", "evaluations.*", "reports.*", "users.*", "settings.*", "scar.*", "certifications.*", "audit.*"],
+  manager: ["dashboard.view", "suppliers.view", "evaluations.view", "evaluations.review", "reports.*", "scar.*", "certifications.*", "audit.*"],
   evaluator: ["dashboard.view", "suppliers.view", "evaluations.view", "evaluations.create", "evaluations.edit"],
   viewer: ["dashboard.view", "reports.view"],
+};
+
+// ── 認證效期 ─────────────────────────────────────────────────
+export type CertStatus = "valid" | "expiring_soon" | "expired";
+
+export interface Certification {
+  id: string;
+  supplier_id: string;
+  supplier_name: string;
+  supplier_code: string;
+  cert_type: string;
+  cert_number: string;
+  issued_by: string;
+  issue_date: string;
+  expiry_date: string;
+  notes: string;
+}
+
+export const CERT_STATUS_LABELS: Record<CertStatus, string> = {
+  valid:         "有效",
+  expiring_soon: "即將到期",
+  expired:       "已過期",
+};
+
+// ── 稽核行事曆 ────────────────────────────────────────────────
+export type AuditEventType = "evaluation" | "scar_due" | "cert_review" | "audit_visit";
+export type AuditEventStatus = "scheduled" | "completed" | "overdue" | "cancelled";
+
+export interface AuditEvent {
+  id: string;
+  title: string;
+  supplier_id: string;
+  supplier_name: string;
+  supplier_code: string;
+  event_type: AuditEventType;
+  date: string;           // YYYY-MM-DD
+  status: AuditEventStatus;
+  notes: string;
+  related_id?: string;    // evaluation_id / scar_id / cert_id
+}
+
+export const AUDIT_EVENT_TYPE_LABELS: Record<AuditEventType, string> = {
+  evaluation:  "評鑑作業",
+  scar_due:    "SCAR 到期",
+  cert_review: "認證複查",
+  audit_visit: "現場稽核",
+};
+
+export const AUDIT_EVENT_STATUS_LABELS: Record<AuditEventStatus, string> = {
+  scheduled:  "已排定",
+  completed:  "已完成",
+  overdue:    "逾期未完成",
+  cancelled:  "已取消",
 };

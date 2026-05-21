@@ -1,5 +1,6 @@
 import type {
-  User, Supplier, Evaluation, EvaluationCriteria, MonthlyTrend, EvaluationScore, Scar
+  User, Supplier, Evaluation, EvaluationCriteria, MonthlyTrend, EvaluationScore, Scar,
+  Certification, AuditEvent
 } from "@/types";
 
 // ================================================================
@@ -415,4 +416,203 @@ export const CATEGORY_SCORES = [
   { category: "技術", avg: 88.1 },
   { category: "財務", avg: 84.6 },
   { category: "合規", avg: 90.2 },
+];
+
+// ================================================================
+// 認證效期（14 筆，基準日 2026-05-21）
+// ================================================================
+export const CERTIFICATIONS: Certification[] = [
+  // ── SUP-001 品晶半導體材料 ──
+  {
+    id: "cert-01", supplier_id: "s1", supplier_name: "品晶半導體材料股份有限公司", supplier_code: "SUP-001",
+    cert_type: "IATF 16949:2016", cert_number: "TUV-16949-2024-0715",
+    issued_by: "TÜV Rheinland", issue_date: "2024-07-01", expiry_date: "2027-06-30",
+    notes: "汽車零件品質管理系統，三年效期，下次複審 2027-01",
+  },
+  {
+    id: "cert-02", supplier_id: "s1", supplier_name: "品晶半導體材料股份有限公司", supplier_code: "SUP-001",
+    cert_type: "ISO 9001:2015", cert_number: "BSI-9001-2023-1201",
+    issued_by: "BSI Group", issue_date: "2023-12-01", expiry_date: "2026-07-31",
+    notes: "品質管理系統，距到期 71 天，需安排複審作業",
+  },
+  {
+    id: "cert-03", supplier_id: "s1", supplier_name: "品晶半導體材料股份有限公司", supplier_code: "SUP-001",
+    cert_type: "ISO 14001:2015", cert_number: "SGS-14001-2023-0620",
+    issued_by: "SGS Taiwan", issue_date: "2023-06-20", expiry_date: "2026-06-20",
+    notes: "環境管理系統，距到期約 30 天，請即刻安排複查",
+  },
+
+  // ── SUP-002 正鑫特殊氣體 ──
+  {
+    id: "cert-04", supplier_id: "s2", supplier_name: "正鑫特殊氣體有限公司", supplier_code: "SUP-002",
+    cert_type: "ISO 45001:2018", cert_number: "BV-45001-2024-0401",
+    issued_by: "Bureau Veritas", issue_date: "2024-04-01", expiry_date: "2027-03-31",
+    notes: "職業健康安全管理系統，特殊氣體作業必要認證",
+  },
+  {
+    id: "cert-05", supplier_id: "s2", supplier_name: "正鑫特殊氣體有限公司", supplier_code: "SUP-002",
+    cert_type: "ISO 9001:2015", cert_number: "DNV-9001-2023-1215",
+    issued_by: "DNV GL", issue_date: "2023-12-15", expiry_date: "2026-12-31",
+    notes: "品質管理系統，有效期至年底",
+  },
+  {
+    id: "cert-06", supplier_id: "s2", supplier_name: "正鑫特殊氣體有限公司", supplier_code: "SUP-002",
+    cert_type: "ISO 14001:2015", cert_number: "SGS-14001-2022-1130",
+    issued_by: "SGS Taiwan", issue_date: "2022-12-01", expiry_date: "2025-11-30",
+    notes: "⚠️ 已過期！上次複審未通過，需重新申請認證",
+  },
+
+  // ── SUP-003 光揚光罩科技 ──
+  {
+    id: "cert-07", supplier_id: "s3", supplier_name: "光揚光罩科技股份有限公司", supplier_code: "SUP-003",
+    cert_type: "ISO 9001:2015", cert_number: "TUV-9001-2023-0901",
+    issued_by: "TÜV SÜD", issue_date: "2023-09-01", expiry_date: "2026-08-15",
+    notes: "品質管理系統，距到期約 86 天，建議 7 月前安排複審",
+  },
+  {
+    id: "cert-08", supplier_id: "s3", supplier_name: "光揚光罩科技股份有限公司", supplier_code: "SUP-003",
+    cert_type: "ISO/IEC 17025:2017", cert_number: "TAF-17025-2023-0710",
+    issued_by: "全國認證基金會 TAF", issue_date: "2023-07-10", expiry_date: "2026-07-10",
+    notes: "檢測校正實驗室認證，距到期約 50 天",
+  },
+
+  // ── SUP-004 精密封測服務 ──
+  {
+    id: "cert-09", supplier_id: "s4", supplier_name: "精密封測服務股份有限公司", supplier_code: "SUP-004",
+    cert_type: "IATF 16949:2016", cert_number: "BSI-16949-2024-0201",
+    issued_by: "BSI Group", issue_date: "2024-02-01", expiry_date: "2027-01-31",
+    notes: "汽車封裝測試品質管理系統",
+  },
+  {
+    id: "cert-10", supplier_id: "s4", supplier_name: "精密封測服務股份有限公司", supplier_code: "SUP-004",
+    cert_type: "AEC-Q102", cert_number: "AEC-Q102-2023-0630",
+    issued_by: "AEC Committee", issue_date: "2023-07-01", expiry_date: "2026-06-30",
+    notes: "汽車電子離散光電元件可靠度標準，距到期約 40 天",
+  },
+  {
+    id: "cert-11", supplier_id: "s4", supplier_name: "精密封測服務股份有限公司", supplier_code: "SUP-004",
+    cert_type: "ISO 9001:2015", cert_number: "DNV-9001-2024-0401",
+    issued_by: "DNV GL", issue_date: "2024-04-01", expiry_date: "2027-03-31",
+    notes: "品質管理系統，效期充裕",
+  },
+
+  // ── SUP-005 先進製程化學品 ──
+  {
+    id: "cert-12", supplier_id: "s5", supplier_name: "先進製程化學品股份有限公司", supplier_code: "SUP-005",
+    cert_type: "ISO 9001:2015", cert_number: "SGS-9001-2022-0930",
+    issued_by: "SGS Taiwan", issue_date: "2022-10-01", expiry_date: "2025-09-30",
+    notes: "⚠️ 已過期！配合 SCAR 改善計畫，需列為 Q3 優先復審項目",
+  },
+  {
+    id: "cert-13", supplier_id: "s5", supplier_name: "先進製程化學品股份有限公司", supplier_code: "SUP-005",
+    cert_type: "RoHS 合規聲明", cert_number: "ROHS-2023-SUP005-0615",
+    issued_by: "第三方驗證機構", issue_date: "2023-06-15", expiry_date: "2026-06-10",
+    notes: "限制有害物質合規聲明，距到期約 20 天，需立即安排更新",
+  },
+  {
+    id: "cert-14", supplier_id: "s5", supplier_name: "先進製程化學品股份有限公司", supplier_code: "SUP-005",
+    cert_type: "ISO 14001:2015", cert_number: "BV-14001-2024-0201",
+    issued_by: "Bureau Veritas", issue_date: "2024-02-01", expiry_date: "2027-01-31",
+    notes: "環境管理系統，2024 年重新取得，效期充裕",
+  },
+];
+
+// ================================================================
+// 稽核行事曆事件（基準日 2026-05-21）
+// ================================================================
+export const AUDIT_EVENTS: AuditEvent[] = [
+  // ── 五月（本月）──
+  {
+    id: "ae-01", title: "先進製程化學品 SCAR 進度確認",
+    supplier_id: "s5", supplier_name: "先進製程化學品股份有限公司", supplier_code: "SUP-005",
+    event_type: "audit_visit", date: "2026-05-28", status: "scheduled",
+    notes: "確認 SCAR-2025-001 SPC 導入進度，目標覆蓋率達 80%",
+    related_id: "sc1",
+  },
+  {
+    id: "ae-02", title: "年度評鑑計畫審查會議",
+    supplier_id: "", supplier_name: "（全體）", supplier_code: "",
+    event_type: "audit_visit", date: "2026-05-30", status: "scheduled",
+    notes: "品質部與採購部聯合審查 Q2 評鑑排程與資源分配",
+  },
+
+  // ── 六月 ──
+  {
+    id: "ae-03", title: "精密封測服務 Q2-2026 評鑑",
+    supplier_id: "s4", supplier_name: "精密封測服務股份有限公司", supplier_code: "SUP-004",
+    event_type: "evaluation", date: "2026-06-03", status: "scheduled",
+    notes: "重點追蹤 Burn-In 覆蓋率改善成效，評鑑人：張偉誠",
+  },
+  {
+    id: "ae-04", title: "RoHS 合規聲明到期 — 先進製程化學品",
+    supplier_id: "s5", supplier_name: "先進製程化學品股份有限公司", supplier_code: "SUP-005",
+    event_type: "cert_review", date: "2026-06-10", status: "scheduled",
+    notes: "RoHS 合規聲明有效期屆滿，需提交更新文件",
+    related_id: "cert-13",
+  },
+  {
+    id: "ae-05", title: "品晶半導體材料 Q2-2026 評鑑",
+    supplier_id: "s1", supplier_name: "品晶半導體材料股份有限公司", supplier_code: "SUP-001",
+    event_type: "evaluation", date: "2026-06-12", status: "scheduled",
+    notes: "例行季評，評鑑人：李美玲",
+  },
+  {
+    id: "ae-06", title: "ISO 14001 到期複查 — 品晶半導體材料",
+    supplier_id: "s1", supplier_name: "品晶半導體材料股份有限公司", supplier_code: "SUP-001",
+    event_type: "cert_review", date: "2026-06-20", status: "scheduled",
+    notes: "ISO 14001:2015 有效期屆滿，已排定稽核機構到場複審",
+    related_id: "cert-03",
+  },
+  {
+    id: "ae-07", title: "AEC-Q102 到期複查 — 精密封測服務",
+    supplier_id: "s4", supplier_name: "精密封測服務股份有限公司", supplier_code: "SUP-004",
+    event_type: "cert_review", date: "2026-06-30", status: "scheduled",
+    notes: "AEC-Q102 汽車電子可靠度認證屆滿，需提交更新申請",
+    related_id: "cert-10",
+  },
+
+  // ── 七月 ──
+  {
+    id: "ae-08", title: "ISO/IEC 17025 到期複查 — 光揚光罩科技",
+    supplier_id: "s3", supplier_name: "光揚光罩科技股份有限公司", supplier_code: "SUP-003",
+    event_type: "cert_review", date: "2026-07-10", status: "scheduled",
+    notes: "TAF 實驗室認證屆滿，需向 TAF 申請換發",
+    related_id: "cert-08",
+  },
+  {
+    id: "ae-09", title: "正鑫特殊氣體 Q2-2026 評鑑",
+    supplier_id: "s2", supplier_name: "正鑫特殊氣體有限公司", supplier_code: "SUP-002",
+    event_type: "evaluation", date: "2026-07-18", status: "scheduled",
+    notes: "例行季評，評鑑人：張偉誠，重點：NF₃ 純度一致性",
+  },
+  {
+    id: "ae-10", title: "ISO 9001 到期複查 — 品晶半導體材料",
+    supplier_id: "s1", supplier_name: "品晶半導體材料股份有限公司", supplier_code: "SUP-001",
+    event_type: "cert_review", date: "2026-07-31", status: "scheduled",
+    notes: "BSI ISO 9001:2015 有效期屆滿，確認換版為 ISO 9001:2025",
+    related_id: "cert-02",
+  },
+
+  // ── 八月 ──
+  {
+    id: "ae-11", title: "光揚光罩科技 Q2-2026 評鑑",
+    supplier_id: "s3", supplier_name: "光揚光罩科技股份有限公司", supplier_code: "SUP-003",
+    event_type: "evaluation", date: "2026-08-14", status: "scheduled",
+    notes: "追蹤 Q1 交期改善成效，評鑑人：李美玲",
+  },
+  {
+    id: "ae-12", title: "先進製程化學品 追蹤評鑑",
+    supplier_id: "s5", supplier_name: "先進製程化學品股份有限公司", supplier_code: "SUP-005",
+    event_type: "evaluation", date: "2026-08-25", status: "scheduled",
+    notes: "SCAR 改善後追蹤評鑑，確認品質系統改善成效",
+    related_id: "sc1",
+  },
+
+  // ── 九月 ──
+  {
+    id: "ae-13", title: "先進製程化學品 現場稽核",
+    supplier_id: "s5", supplier_name: "先進製程化學品股份有限公司", supplier_code: "SUP-005",
+    event_type: "audit_visit", date: "2026-09-10", status: "scheduled",
+    notes: "品質部稽核小組前往台中廠區，確認 SPC 管制系統實施狀況",
+  },
 ];

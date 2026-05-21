@@ -1,5 +1,6 @@
-import type { Supplier, Evaluation, EvaluationScore, Scar } from "@/types";
-import { TIER_LABELS, EVAL_STATUS_LABELS, SCAR_STATUS_LABELS, STATUS_LABELS } from "@/types";
+import type { Supplier, Evaluation, EvaluationScore, Scar, Certification, AuditEvent } from "@/types";
+import { TIER_LABELS, EVAL_STATUS_LABELS, SCAR_STATUS_LABELS, STATUS_LABELS, CERT_STATUS_LABELS, AUDIT_EVENT_TYPE_LABELS, AUDIT_EVENT_STATUS_LABELS } from "@/types";
+import { getCertStatus, getDaysUntilExpiry } from "@/lib/utils";
 
 // ── Excel Export (xlsx) ─────────────────────────────────────────────
 
@@ -56,6 +57,49 @@ export async function exportEvaluationToExcel(
   XLSX.utils.book_append_sheet(wb, ws1, "評鑑資訊");
   XLSX.utils.book_append_sheet(wb, ws2, "詳細分數");
   XLSX.writeFile(wb, `評鑑報告_${evaluation.supplier_code}_${evaluation.period}.xlsx`);
+}
+
+export async function exportCertificationsToExcel(certs: Certification[]): Promise<void> {
+  const XLSX = await import("xlsx");
+  const data = certs.map((c) => {
+    const status = getCertStatus(c.expiry_date);
+    const days = getDaysUntilExpiry(c.expiry_date);
+    return {
+      "供應商": c.supplier_name,
+      "代碼": c.supplier_code,
+      "認證類別": c.cert_type,
+      "認證編號": c.cert_number,
+      "認證機構": c.issued_by,
+      "核發日期": c.issue_date,
+      "到期日期": c.expiry_date,
+      "剩餘天數": days,
+      "狀態": CERT_STATUS_LABELS[status],
+      "備註": c.notes,
+    };
+  });
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws["!cols"] = [28, 10, 18, 24, 20, 12, 12, 10, 10, 40].map((w) => ({ wch: w }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "認證效期清單");
+  XLSX.writeFile(wb, `認證效期清單_${today()}.xlsx`);
+}
+
+export async function exportAuditEventsToExcel(events: AuditEvent[]): Promise<void> {
+  const XLSX = await import("xlsx");
+  const data = events.map((e) => ({
+    "日期": e.date,
+    "事件類型": AUDIT_EVENT_TYPE_LABELS[e.event_type],
+    "標題": e.title,
+    "供應商": e.supplier_name,
+    "代碼": e.supplier_code,
+    "狀態": AUDIT_EVENT_STATUS_LABELS[e.status],
+    "備註": e.notes,
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws["!cols"] = [12, 12, 32, 28, 10, 12, 40].map((w) => ({ wch: w }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "稽核行事曆");
+  XLSX.writeFile(wb, `稽核行事曆_${today()}.xlsx`);
 }
 
 export async function exportScarsToExcel(scars: Scar[]): Promise<void> {

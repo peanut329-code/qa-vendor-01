@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import type { SupplierTier, EvaluationStatus, SupplierStatus, UserRole, ScarStatus } from "@/types";
+import type { SupplierTier, EvaluationStatus, SupplierStatus, UserRole, ScarStatus, CertStatus, AuditEventType } from "@/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -81,11 +81,51 @@ export function formatDate(iso: string) {
 export function hasPermission(userRole: UserRole, permission: string): boolean {
   if (userRole === "super_admin") return true;
   const perms = {
-    admin:     ["dashboard", "suppliers", "evaluations", "reports", "users", "settings", "scar"],
-    manager:   ["dashboard", "suppliers.view", "evaluations", "reports", "scar"],
+    admin:     ["dashboard", "suppliers", "evaluations", "reports", "users", "settings", "scar", "certifications", "audit"],
+    manager:   ["dashboard", "suppliers.view", "evaluations", "reports", "scar", "certifications", "audit"],
     evaluator: ["dashboard", "suppliers.view", "evaluations.view", "evaluations.create"],
     viewer:    ["dashboard", "reports.view"],
   };
   const allowed = perms[userRole as keyof typeof perms] ?? [];
   return allowed.some((p) => permission.startsWith(p));
+}
+
+// ── 認證效期工具函式 ─────────────────────────────────────────
+
+export function getCertStatus(expiryDate: string): CertStatus {
+  const now = new Date();
+  const expiry = new Date(expiryDate);
+  const diffDays = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 86400));
+  if (diffDays < 0) return "expired";
+  if (diffDays <= 90) return "expiring_soon";
+  return "valid";
+}
+
+export function getDaysUntilExpiry(expiryDate: string): number {
+  const now = new Date();
+  const expiry = new Date(expiryDate);
+  return Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 86400));
+}
+
+export function getCertStatusColor(status: CertStatus) {
+  const map: Record<CertStatus, { bg: string; text: string; dot: string }> = {
+    valid:         { bg: "bg-emerald-100", text: "text-emerald-700", dot: "bg-emerald-500" },
+    expiring_soon: { bg: "bg-amber-100",   text: "text-amber-700",   dot: "bg-amber-500"   },
+    expired:       { bg: "bg-red-100",     text: "text-red-700",     dot: "bg-red-500"     },
+  };
+  return map[status];
+}
+
+// ── 稽核行事曆工具函式 ───────────────────────────────────────
+
+export function getAuditEventColor(eventType: AuditEventType): {
+  bg: string; text: string; accent: string; icon: string;
+} {
+  const map: Record<AuditEventType, { bg: string; text: string; accent: string; icon: string }> = {
+    evaluation:  { bg: "#EDF3FA", text: "#1D4ED8", accent: "#5B8FD9", icon: "bi-clipboard2-check-fill" },
+    scar_due:    { bg: "#FEF3C7", text: "#92400E", accent: "#F59E0B", icon: "bi-exclamation-triangle-fill" },
+    cert_review: { bg: "#FEF2F2", text: "#991B1B", accent: "#EF4444", icon: "bi-patch-check-fill" },
+    audit_visit: { bg: "#F0FDF4", text: "#065F46", accent: "#22C55E", icon: "bi-building-check" },
+  };
+  return map[eventType];
 }

@@ -39,6 +39,18 @@ const NAV_ITEMS: NavItem[] = [
     allowedRoles: ["super_admin", "admin", "manager"],
   },
   {
+    href: "/certifications",
+    icon: "bi-patch-check-fill",
+    label: "認證效期",
+    allowedRoles: ["super_admin", "admin", "manager"],
+  },
+  {
+    href: "/audit",
+    icon: "bi-calendar3-week-fill",
+    label: "稽核行事曆",
+    allowedRoles: ["super_admin", "admin", "manager"],
+  },
+  {
     href: "/reports",
     icon: "bi-bar-chart-line-fill",
     label: "報表分析",
