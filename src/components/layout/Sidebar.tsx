@@ -51,6 +51,18 @@ const NAV_ITEMS: NavItem[] = [
     allowedRoles: ["super_admin", "admin", "manager"],
   },
   {
+    href: "/asl",
+    icon: "bi-list-check",
+    label: "合格供應商名單",
+    allowedRoles: ["super_admin", "admin", "manager"],
+  },
+  {
+    href: "/risk",
+    icon: "bi-diagram-3-fill",
+    label: "風險評估矩陣",
+    allowedRoles: ["super_admin", "admin", "manager"],
+  },
+  {
     href: "/reports",
     icon: "bi-bar-chart-line-fill",
     label: "報表分析",

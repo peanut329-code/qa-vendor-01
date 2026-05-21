@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,7 +12,7 @@ const PERIODS = [
   "2025-Q2", "2025-Q1", "2024-Q4", "2024-Q3", "2024-Q2", "2024-Q1",
 ];
 
-export default function NewEvaluationPage() {
+function NewEvaluationContent() {
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -380,5 +380,13 @@ export default function NewEvaluationPage() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function NewEvaluationPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: "#94AEC8" }}>載入中…</div>}>
+      <NewEvaluationContent />
+    </Suspense>
   );
 }

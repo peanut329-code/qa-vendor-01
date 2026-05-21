@@ -201,3 +201,55 @@ export const AUDIT_EVENT_STATUS_LABELS: Record<AuditEventStatus, string> = {
   overdue:    "逾期未完成",
   cancelled:  "已取消",
 };
+
+// ── 合格供應商名單 (ASL) ──────────────────────────────────────
+export type AslStatus = "approved" | "conditional" | "probation" | "suspended";
+
+export interface AslRecord {
+  id: string;
+  supplier_id: string;
+  supplier_name: string;
+  supplier_code: string;
+  category: string;
+  scope: string;             // 核准範圍
+  status: AslStatus;
+  approved_by: string;
+  approved_date: string;     // YYYY-MM-DD
+  valid_until: string;       // YYYY-MM-DD
+  review_date: string;       // 下次複評日
+  conditions: string;        // 附帶條件（conditional/probation 用）
+  notes: string;
+}
+
+export const ASL_STATUS_LABELS: Record<AslStatus, string> = {
+  approved:    "核准合格",
+  conditional: "條件核准",
+  probation:   "試用觀察",
+  suspended:   "暫停使用",
+};
+
+// ── 風險評估矩陣 ──────────────────────────────────────────────
+export type RiskLevel = "low" | "medium" | "high" | "critical";
+
+export interface SupplierRisk {
+  supplier_id: string;
+  supplier_name: string;
+  supplier_code: string;
+  category: string;
+  tier: SupplierTier;
+  likelihood: number;        // 1–5
+  impact: number;            // 1–5
+  risk_score: number;        // likelihood × impact
+  risk_level: RiskLevel;
+  risk_factors: string[];    // 風險因子清單
+  mitigation: string;        // 緩解措施
+  owner: string;             // 負責人
+  last_reviewed: string;     // YYYY-MM-DD
+}
+
+export const RISK_LEVEL_LABELS: Record<RiskLevel, string> = {
+  low:      "低風險",
+  medium:   "中風險",
+  high:     "高風險",
+  critical: "緊急風險",
+};

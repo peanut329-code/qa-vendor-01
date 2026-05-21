@@ -1,5 +1,5 @@
-import type { Supplier, Evaluation, EvaluationScore, Scar, Certification, AuditEvent } from "@/types";
-import { TIER_LABELS, EVAL_STATUS_LABELS, SCAR_STATUS_LABELS, STATUS_LABELS, CERT_STATUS_LABELS, AUDIT_EVENT_TYPE_LABELS, AUDIT_EVENT_STATUS_LABELS } from "@/types";
+import type { Supplier, Evaluation, EvaluationScore, Scar, Certification, AuditEvent, AslRecord, SupplierRisk } from "@/types";
+import { TIER_LABELS, EVAL_STATUS_LABELS, SCAR_STATUS_LABELS, STATUS_LABELS, CERT_STATUS_LABELS, AUDIT_EVENT_TYPE_LABELS, AUDIT_EVENT_STATUS_LABELS, ASL_STATUS_LABELS, RISK_LEVEL_LABELS } from "@/types";
 import { getCertStatus, getDaysUntilExpiry } from "@/lib/utils";
 
 // ── Excel Export (xlsx) ─────────────────────────────────────────────
@@ -100,6 +100,51 @@ export async function exportAuditEventsToExcel(events: AuditEvent[]): Promise<vo
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "稽核行事曆");
   XLSX.writeFile(wb, `稽核行事曆_${today()}.xlsx`);
+}
+
+export async function exportAslToExcel(records: AslRecord[]): Promise<void> {
+  const XLSX = await import("xlsx");
+  const data = records.map((r) => ({
+    "供應商代碼": r.supplier_code,
+    "供應商名稱": r.supplier_name,
+    "類別": r.category,
+    "核准範圍": r.scope,
+    "狀態": ASL_STATUS_LABELS[r.status],
+    "核准人員": r.approved_by,
+    "核准日期": r.approved_date,
+    "有效期限": r.valid_until,
+    "下次複評": r.review_date,
+    "附帶條件": r.conditions || "—",
+    "備註": r.notes,
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws["!cols"] = [10, 28, 10, 40, 8, 10, 12, 12, 12, 40, 40].map((w) => ({ wch: w }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "合格供應商名單 ASL");
+  XLSX.writeFile(wb, `合格供應商名單_ASL_${today()}.xlsx`);
+}
+
+export async function exportRiskToExcel(risks: SupplierRisk[]): Promise<void> {
+  const XLSX = await import("xlsx");
+  const data = risks.map((r) => ({
+    "供應商代碼": r.supplier_code,
+    "供應商名稱": r.supplier_name,
+    "類別": r.category,
+    "評鑑等級": TIER_LABELS[r.tier],
+    "發生可能性 (L)": r.likelihood,
+    "影響程度 (I)": r.impact,
+    "風險分數": r.risk_score,
+    "風險等級": RISK_LEVEL_LABELS[r.risk_level],
+    "主要風險因子": r.risk_factors.join("；"),
+    "緩解措施": r.mitigation,
+    "負責人": r.owner,
+    "最後複評日": r.last_reviewed,
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws["!cols"] = [10, 28, 10, 8, 12, 12, 10, 8, 50, 40, 8, 12].map((w) => ({ wch: w }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "風險評估矩陣");
+  XLSX.writeFile(wb, `風險評估矩陣_${today()}.xlsx`);
 }
 
 export async function exportScarsToExcel(scars: Scar[]): Promise<void> {

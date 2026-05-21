@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import type { SupplierTier, EvaluationStatus, SupplierStatus, UserRole, ScarStatus, CertStatus, AuditEventType } from "@/types";
+import type { SupplierTier, EvaluationStatus, SupplierStatus, UserRole, ScarStatus, CertStatus, AuditEventType, AslStatus, RiskLevel } from "@/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -114,6 +114,37 @@ export function getCertStatusColor(status: CertStatus) {
     expired:       { bg: "bg-red-100",     text: "text-red-700",     dot: "bg-red-500"     },
   };
   return map[status];
+}
+
+// ── 合格供應商名單 (ASL) 工具函式 ────────────────────────────
+
+export function getAslStatusColor(status: AslStatus): { bg: string; text: string; dot: string; border: string } {
+  const map: Record<AslStatus, { bg: string; text: string; dot: string; border: string }> = {
+    approved:    { bg: "bg-emerald-100", text: "text-emerald-700", dot: "bg-emerald-500", border: "#22C55E" },
+    conditional: { bg: "bg-amber-100",   text: "text-amber-700",   dot: "bg-amber-500",   border: "#F59E0B" },
+    probation:   { bg: "bg-orange-100",  text: "text-orange-700",  dot: "bg-orange-500",  border: "#FB923C" },
+    suspended:   { bg: "bg-red-100",     text: "text-red-700",     dot: "bg-red-500",     border: "#EF4444" },
+  };
+  return map[status];
+}
+
+// ── 風險矩陣工具函式 ─────────────────────────────────────────
+
+export function getRiskLevel(score: number): RiskLevel {
+  if (score >= 16) return "critical";
+  if (score >= 9)  return "high";
+  if (score >= 4)  return "medium";
+  return "low";
+}
+
+export function getRiskColor(level: RiskLevel): { bg: string; text: string; border: string; cell: string } {
+  const map: Record<RiskLevel, { bg: string; text: string; border: string; cell: string }> = {
+    low:      { bg: "#F0FDF4", text: "#065F46", border: "#22C55E", cell: "#D1FAE5" },
+    medium:   { bg: "#FEF3C7", text: "#92400E", border: "#F59E0B", cell: "#FDE68A" },
+    high:     { bg: "#FEF2F2", text: "#991B1B", border: "#EF4444", cell: "#FECACA" },
+    critical: { bg: "#FFF1F2", text: "#7F1D1D", border: "#DC2626", cell: "#FCA5A5" },
+  };
+  return map[level];
 }
 
 // ── 稽核行事曆工具函式 ───────────────────────────────────────
