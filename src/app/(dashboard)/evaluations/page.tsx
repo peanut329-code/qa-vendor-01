@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { EVALUATIONS } from "@/lib/mock-data";
 import { getTierColor, getEvalStatusColor, formatDate } from "@/lib/utils";
 import { TIER_LABELS, EVAL_STATUS_LABELS } from "@/types";
@@ -62,10 +63,12 @@ export default function EvaluationsPage() {
           <div className="page-subtitle">管理所有供應商評鑑流程與紀錄</div>
         </div>
         {canCreate && (
-          <button className="ev-btn ev-btn-primary">
-            <i className="bi bi-plus-lg" />
-            新增評鑑
-          </button>
+          <Link href="/evaluations/new">
+            <button className="ev-btn ev-btn-primary">
+              <i className="bi bi-plus-lg" />
+              新增評鑑
+            </button>
+          </Link>
         )}
       </div>
 
@@ -239,13 +242,17 @@ export default function EvaluationsPage() {
                     </td>
                     <td>
                       <div style={{ display: "flex", gap: 4 }}>
-                        <button className="ev-btn ev-btn-ghost" style={{ padding: "4px 10px", fontSize: "0.78rem" }}>
-                          <i className="bi bi-eye" />
-                        </button>
-                        {canReview && ev.status === "completed" && (
-                          <button className="ev-btn ev-btn-primary" style={{ padding: "4px 10px", fontSize: "0.78rem" }}>
-                            審核
+                        <Link href={`/evaluations/${ev.id}`}>
+                          <button className="ev-btn ev-btn-ghost" style={{ padding: "4px 10px", fontSize: "0.78rem" }}>
+                            <i className="bi bi-eye" /> 查看
                           </button>
+                        </Link>
+                        {canReview && ev.status === "completed" && (
+                          <Link href={`/evaluations/${ev.id}`}>
+                            <button className="ev-btn ev-btn-primary" style={{ padding: "4px 10px", fontSize: "0.78rem" }}>
+                              審核
+                            </button>
+                          </Link>
                         )}
                         {ev.status === "draft" && (
                           <button className="ev-btn ev-btn-secondary" style={{ padding: "4px 10px", fontSize: "0.78rem" }}>

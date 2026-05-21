@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { SUPPLIERS } from "@/lib/mock-data";
 import { getTierColor, getSupplierStatusColor, formatDate } from "@/lib/utils";
 import { TIER_LABELS, STATUS_LABELS } from "@/types";
@@ -207,9 +208,11 @@ export default function SuppliersPage() {
                     </td>
                     <td>
                       <div style={{ display: "flex", gap: 4 }}>
-                        <button className="ev-btn ev-btn-ghost" style={{ padding: "4px 10px", fontSize: "0.78rem" }}>
-                          <i className="bi bi-eye" /> 查看
-                        </button>
+                        <Link href={`/suppliers/${s.id}`}>
+                          <button className="ev-btn ev-btn-ghost" style={{ padding: "4px 10px", fontSize: "0.78rem" }}>
+                            <i className="bi bi-eye" /> 查看
+                          </button>
+                        </Link>
                         {canEdit && (
                           <button className="ev-btn ev-btn-secondary" style={{ padding: "4px 10px", fontSize: "0.78rem" }}>
                             <i className="bi bi-pencil" />

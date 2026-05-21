@@ -33,6 +33,12 @@ const NAV_ITEMS: NavItem[] = [
     allowedRoles: ["super_admin", "admin", "manager", "evaluator"],
   },
   {
+    href: "/scar",
+    icon: "bi-exclamation-triangle-fill",
+    label: "SCAR 管理",
+    allowedRoles: ["super_admin", "admin", "manager"],
+  },
+  {
     href: "/reports",
     icon: "bi-bar-chart-line-fill",
     label: "報表分析",

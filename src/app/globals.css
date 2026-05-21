@@ -299,3 +299,37 @@ body {
   margin-top: 16px;
   letter-spacing: 0.02em;
 }
+
+/* Spin animation for loading states */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Disabled button */
+.ev-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Range input */
+input[type="range"] {
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  cursor: pointer;
+}
+
+/* Print */
+@media print {
+  .layout-sidebar,
+  .layout-topbar,
+  .page-header .ev-btn {
+    display: none !important;
+  }
+  .layout-main {
+    margin: 0 !important;
+  }
+}

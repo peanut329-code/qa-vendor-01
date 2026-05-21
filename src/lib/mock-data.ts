@@ -1,5 +1,5 @@
 import type {
-  User, Supplier, Evaluation, EvaluationCriteria, MonthlyTrend
+  User, Supplier, Evaluation, EvaluationCriteria, MonthlyTrend, EvaluationScore, Scar
 } from "@/types";
 
 // ================================================================
@@ -220,6 +220,166 @@ export const CRITERIA: EvaluationCriteria[] = [
   { id: "c6", name: "品質管理系統", category: "品質", weight: 10, max_score: 100, description: "IATF 16949 / ISO 9001 認證、SPC 管制",   is_active: true, sort_order: 6 },
   { id: "c7", name: "財務穩定性",   category: "財務", weight: 10, max_score: 100, description: "資本額、信用評等、BCP 計畫完整性",         is_active: true, sort_order: 7 },
   { id: "c8", name: "環保合規性",   category: "合規", weight:  5, max_score: 100, description: "RoHS / REACH / ESG 合規，廢氣廢水達標",  is_active: true, sort_order: 8 },
+];
+
+// ================================================================
+// 各評鑑詳細分數（按評鑑 ID 索引）
+// ================================================================
+export const EVALUATION_SCORES: Record<string, EvaluationScore[]> = {
+  // e1 — 品晶半導體 Q1-2025  total ≈ 94.5
+  e1: [
+    { criteria_id: "c1", criteria_name: "品質合格率",   category: "品質", weight: 20, score: 95, weighted_score: 19.0, notes: "矽晶圓 TTV 均一性 ≤ 1.5μm，批退率 0.3%，表現優異" },
+    { criteria_id: "c2", criteria_name: "交貨準時率",   category: "交期", weight: 20, score: 97, weighted_score: 19.4, notes: "準時交貨率 99.2%，緊急備貨回應迅速" },
+    { criteria_id: "c3", criteria_name: "價格競爭力",   category: "價格", weight: 15, score: 90, weighted_score: 13.5, notes: "年降價 2%，報價合理且透明" },
+    { criteria_id: "c4", criteria_name: "服務回應速度", category: "服務", weight: 10, score: 95, weighted_score: 9.5,  notes: "技術諮詢 SLA 4h 達成率 100%" },
+    { criteria_id: "c5", criteria_name: "技術能力",     category: "技術", weight: 10, score: 96, weighted_score: 9.6,  notes: "8吋→12吋製程延伸技術領先業界" },
+    { criteria_id: "c6", criteria_name: "品質管理系統", category: "品質", weight: 10, score: 94, weighted_score: 9.4,  notes: "IATF 16949 認證有效，SPC 全面導入" },
+    { criteria_id: "c7", criteria_name: "財務穩定性",   category: "財務", weight: 10, score: 93, weighted_score: 9.3,  notes: "資本額 5 億，信用評等 A" },
+    { criteria_id: "c8", criteria_name: "環保合規性",   category: "合規", weight:  5, score: 97, weighted_score: 4.85, notes: "ISO 14001 認證，廢水排放達標" },
+  ],
+  // e2 — 品晶半導體 Q4-2024  total ≈ 92.0
+  e2: [
+    { criteria_id: "c1", criteria_name: "品質合格率",   category: "品質", weight: 20, score: 93, weighted_score: 18.6, notes: "12吋晶圓缺陷密度 ≤ 0.08 個/cm²" },
+    { criteria_id: "c2", criteria_name: "交貨準時率",   category: "交期", weight: 20, score: 94, weighted_score: 18.8, notes: "Q4 準時交貨率 98.5%" },
+    { criteria_id: "c3", criteria_name: "價格競爭力",   category: "價格", weight: 15, score: 88, weighted_score: 13.2, notes: "年降價 1.8%，合約執行穩定" },
+    { criteria_id: "c4", criteria_name: "服務回應速度", category: "服務", weight: 10, score: 92, weighted_score: 9.2,  notes: "客訴處理平均 2 天結案" },
+    { criteria_id: "c5", criteria_name: "技術能力",     category: "技術", weight: 10, score: 94, weighted_score: 9.4,  notes: "EUV 光罩製程技術配合良好" },
+    { criteria_id: "c6", criteria_name: "品質管理系統", category: "品質", weight: 10, score: 91, weighted_score: 9.1,  notes: "SPC 管制圖完整，Cpk ≥ 1.67" },
+    { criteria_id: "c7", criteria_name: "財務穩定性",   category: "財務", weight: 10, score: 92, weighted_score: 9.2,  notes: "財務健全，BCP 計畫完備" },
+    { criteria_id: "c8", criteria_name: "環保合規性",   category: "合規", weight:  5, score: 95, weighted_score: 4.75, notes: "碳盤查報告完整，ESG 達標" },
+  ],
+  // e3 — 正鑫特殊氣體 Q1-2025  total ≈ 92.8
+  e3: [
+    { criteria_id: "c1", criteria_name: "品質合格率",   category: "品質", weight: 20, score: 96, weighted_score: 19.2, notes: "NF₃ 純度 ≥ 99.9999%，批次均一性優" },
+    { criteria_id: "c2", criteria_name: "交貨準時率",   category: "交期", weight: 20, score: 94, weighted_score: 18.8, notes: "緊急補貨 ≤ 4h，準時率 98.8%" },
+    { criteria_id: "c3", criteria_name: "價格競爭力",   category: "價格", weight: 15, score: 88, weighted_score: 13.2, notes: "長約鎖價，氣體成本波動控制良好" },
+    { criteria_id: "c4", criteria_name: "服務回應速度", category: "服務", weight: 10, score: 97, weighted_score: 9.7,  notes: "24hr 緊急支援，設置專屬服務窗口" },
+    { criteria_id: "c5", criteria_name: "技術能力",     category: "技術", weight: 10, score: 92, weighted_score: 9.2,  notes: "低溫製程氣體研發能力業界領先" },
+    { criteria_id: "c6", criteria_name: "品質管理系統", category: "品質", weight: 10, score: 93, weighted_score: 9.3,  notes: "ISO 45001 安衛認證有效" },
+    { criteria_id: "c7", criteria_name: "財務穩定性",   category: "財務", weight: 10, score: 90, weighted_score: 9.0,  notes: "資本額 3 億，財務穩定" },
+    { criteria_id: "c8", criteria_name: "環保合規性",   category: "合規", weight:  5, score: 97, weighted_score: 4.85, notes: "危險物品運輸 SOP 完善，無事故記錄" },
+  ],
+  // e4 — 正鑫特殊氣體 Q4-2024  total ≈ 90.3
+  e4: [
+    { criteria_id: "c1", criteria_name: "品質合格率",   category: "品質", weight: 20, score: 91, weighted_score: 18.2, notes: "氣體純度穩定，無重大批退紀錄" },
+    { criteria_id: "c2", criteria_name: "交貨準時率",   category: "交期", weight: 20, score: 93, weighted_score: 18.6, notes: "Q4 準時交貨率 97.2%" },
+    { criteria_id: "c3", criteria_name: "價格競爭力",   category: "價格", weight: 15, score: 87, weighted_score: 13.05, notes: "年降價 1.5%，合理範圍" },
+    { criteria_id: "c4", criteria_name: "服務回應速度", category: "服務", weight: 10, score: 90, weighted_score: 9.0,  notes: "響應速度良好，平均 3h 回覆" },
+    { criteria_id: "c5", criteria_name: "技術能力",     category: "技術", weight: 10, score: 89, weighted_score: 8.9,  notes: "技術路線圖完整，配合度高" },
+    { criteria_id: "c6", criteria_name: "品質管理系統", category: "品質", weight: 10, score: 90, weighted_score: 9.0,  notes: "ISO 45001 在效，SPC 管制正常" },
+    { criteria_id: "c7", criteria_name: "財務穩定性",   category: "財務", weight: 10, score: 88, weighted_score: 8.8,  notes: "財務健全，無負面信用記錄" },
+    { criteria_id: "c8", criteria_name: "環保合規性",   category: "合規", weight:  5, score: 95, weighted_score: 4.75, notes: "廢氣處理合規，符合法規要求" },
+  ],
+  // e5 — 光揚光罩科技 Q1-2025  total ≈ 85.5
+  e5: [
+    { criteria_id: "c1", criteria_name: "品質合格率",   category: "品質", weight: 20, score: 87, weighted_score: 17.4, notes: "DUV 光罩 CD 精度 ±3nm，良率 97.5%" },
+    { criteria_id: "c2", criteria_name: "交貨準時率",   category: "交期", weight: 20, score: 80, weighted_score: 16.0, notes: "交期延誤 2 次，共延遲 8 工作天，需改善" },
+    { criteria_id: "c3", criteria_name: "價格競爭力",   category: "價格", weight: 15, score: 85, weighted_score: 12.75, notes: "報價合理，但年降不足 1%" },
+    { criteria_id: "c4", criteria_name: "服務回應速度", category: "服務", weight: 10, score: 88, weighted_score: 8.8,  notes: "技術支援配合良好，平均 1 天回覆" },
+    { criteria_id: "c5", criteria_name: "技術能力",     category: "技術", weight: 10, score: 90, weighted_score: 9.0,  notes: "EUV 光罩缺陷修補能力明顯提升" },
+    { criteria_id: "c6", criteria_name: "品質管理系統", category: "品質", weight: 10, score: 87, weighted_score: 8.7,  notes: "ISO 9001 認證有效，SPC 部分導入" },
+    { criteria_id: "c7", criteria_name: "財務穩定性",   category: "財務", weight: 10, score: 86, weighted_score: 8.6,  notes: "財務狀況穩定" },
+    { criteria_id: "c8", criteria_name: "環保合規性",   category: "合規", weight:  5, score: 90, weighted_score: 4.5,  notes: "環保合規，廢液處理符合標準" },
+  ],
+  // e6 — 光揚光罩科技 Q4-2024  total ≈ 83.3
+  e6: [
+    { criteria_id: "c1", criteria_name: "品質合格率",   category: "品質", weight: 20, score: 84, weighted_score: 16.8, notes: "光罩缺陷修補率 95%，品質穩定" },
+    { criteria_id: "c2", criteria_name: "交貨準時率",   category: "交期", weight: 20, score: 79, weighted_score: 15.8, notes: "交期略有延誤，改善行動進行中" },
+    { criteria_id: "c3", criteria_name: "價格競爭力",   category: "價格", weight: 15, score: 82, weighted_score: 12.3, notes: "報價合理性普通，議價空間有限" },
+    { criteria_id: "c4", criteria_name: "服務回應速度", category: "服務", weight: 10, score: 85, weighted_score: 8.5,  notes: "技術諮詢回應約 2 天" },
+    { criteria_id: "c5", criteria_name: "技術能力",     category: "技術", weight: 10, score: 88, weighted_score: 8.8,  notes: "EUV 光罩技術配合度良好" },
+    { criteria_id: "c6", criteria_name: "品質管理系統", category: "品質", weight: 10, score: 83, weighted_score: 8.3,  notes: "品質系統待加強，SPC 覆蓋率 60%" },
+    { criteria_id: "c7", criteria_name: "財務穩定性",   category: "財務", weight: 10, score: 84, weighted_score: 8.4,  notes: "財務狀況穩定，無重大風險" },
+    { criteria_id: "c8", criteria_name: "環保合規性",   category: "合規", weight:  5, score: 88, weighted_score: 4.4,  notes: "環保合規，符合法規要求" },
+  ],
+  // e8 — 精密封測服務 Q4-2024  total ≈ 80.15
+  e8: [
+    { criteria_id: "c1", criteria_name: "品質合格率",   category: "品質", weight: 20, score: 82, weighted_score: 16.4, notes: "Flip-Chip 良率 98.6%，Burn-In 覆蓋率 85.3% 偏低" },
+    { criteria_id: "c2", criteria_name: "交貨準時率",   category: "交期", weight: 20, score: 76, weighted_score: 15.2, notes: "準時交貨率 93.2%，部分急單延誤" },
+    { criteria_id: "c3", criteria_name: "價格競爭力",   category: "價格", weight: 15, score: 78, weighted_score: 11.7, notes: "價格競爭力普通，高於市場均價 5%" },
+    { criteria_id: "c4", criteria_name: "服務回應速度", category: "服務", weight: 10, score: 82, weighted_score: 8.2,  notes: "客訴響應平均 3 天，略慢" },
+    { criteria_id: "c5", criteria_name: "技術能力",     category: "技術", weight: 10, score: 84, weighted_score: 8.4,  notes: "CoWoS 先進封裝技術能力中等" },
+    { criteria_id: "c6", criteria_name: "品質管理系統", category: "品質", weight: 10, score: 80, weighted_score: 8.0,  notes: "AEC-Q102 認證取得中，尚未完成" },
+    { criteria_id: "c7", criteria_name: "財務穩定性",   category: "財務", weight: 10, score: 80, weighted_score: 8.0,  notes: "財務狀況穩定，資本額充足" },
+    { criteria_id: "c8", criteria_name: "環保合規性",   category: "合規", weight:  5, score: 85, weighted_score: 4.25, notes: "廢水排放合規，符合環保法規" },
+  ],
+  // e10 — 先進製程化學品 Q4-2024  total = 67.0
+  e10: [
+    { criteria_id: "c1", criteria_name: "品質合格率",   category: "品質", weight: 20, score: 60, weighted_score: 12.0, notes: "CMP漿料黏度偏差>±8%，超標3次，嚴重影響製程均一性" },
+    { criteria_id: "c2", criteria_name: "交貨準時率",   category: "交期", weight: 20, score: 72, weighted_score: 14.4, notes: "準時交貨率 88%，缺貨 2 次影響產線" },
+    { criteria_id: "c3", criteria_name: "價格競爭力",   category: "價格", weight: 15, score: 70, weighted_score: 10.5, notes: "報價高於市場均價，年降承諾未履行" },
+    { criteria_id: "c4", criteria_name: "服務回應速度", category: "服務", weight: 10, score: 65, weighted_score: 6.5,  notes: "問題響應慢，平均 5 天才回覆" },
+    { criteria_id: "c5", criteria_name: "技術能力",     category: "技術", weight: 10, score: 62, weighted_score: 6.2,  notes: "配方調整週期過長，技術改善能力不足" },
+    { criteria_id: "c6", criteria_name: "品質管理系統", category: "品質", weight: 10, score: 68, weighted_score: 6.8,  notes: "SPC 管制導入率僅 40%，遠低於要求" },
+    { criteria_id: "c7", criteria_name: "財務穩定性",   category: "財務", weight: 10, score: 80, weighted_score: 8.0,  notes: "財務狀況尚可，無重大負債" },
+    { criteria_id: "c8", criteria_name: "環保合規性",   category: "合規", weight:  5, score: 52, weighted_score: 2.6,  notes: "廢液處理未達標，已接獲環保局警告" },
+  ],
+};
+
+// ================================================================
+// SCAR 矯正行動要求
+// ================================================================
+export const SCARS: Scar[] = [
+  {
+    id: "sc1",
+    scar_number: "SCAR-2025-001",
+    supplier_id: "s5",
+    supplier_name: "先進製程化學品股份有限公司",
+    supplier_code: "SUP-005",
+    evaluation_id: "e10",
+    triggered_score: 67.0,
+    triggered_tier: "C",
+    issue_description: "CMP 漿料批次均一性不足，光阻劑黏度偏差超標 3 次（偏差 >±8%），嚴重影響 CMP 製程均一性，造成晶圓良率損失約 1.2%。",
+    category: "品質",
+    root_cause: "供應商原料倉儲溫濕度控制不當，導致漿料特性不穩定；配方管制程序（SOP）未落實，操作人員未遵守標準作業流程，批次間差異持續擴大。",
+    corrective_action: "1. 改善倉儲環境，新增溫濕度自動監控系統（完成率 80%）\n2. 重新培訓操作人員，強化 SOP 執行力（已完成）\n3. 增加出廠前批次抽驗頻率，由每批 1 次改為 5 次（執行中）\n4. 導入 SPC 管制圖即時監控黏度變化（導入率 60%）",
+    target_date: "2025-03-31",
+    verified_date: null,
+    status: "in_progress",
+    created_by: "u6",
+    created_at: "2024-11-05T10:00:00Z",
+    updated_at: "2025-01-15T14:00:00Z",
+  },
+  {
+    id: "sc2",
+    scar_number: "SCAR-2024-012",
+    supplier_id: "s4",
+    supplier_name: "精密封測服務股份有限公司",
+    supplier_code: "SUP-004",
+    evaluation_id: "e8",
+    triggered_score: 79.5,
+    triggered_tier: "B",
+    issue_description: "Burn-In 測試覆蓋率不足，實測覆蓋率僅 85.3%，低於合約規定的 100% 覆蓋率標準，未測試項目涉及高溫老化及電氣特性測試。",
+    category: "品質",
+    root_cause: "測試設備產能不足，在高訂單量時無法完成全量測試；測試程式版本未及時更新，未涵蓋新型封裝（Flip-Chip BGA）的測試向量，導致覆蓋缺口。",
+    corrective_action: "1. 新增 3 台 Burn-In 測試爐，擴充產能（已完成，2024-12-20）\n2. 更新測試程式，確保覆蓋所有封裝類型（已完成，2024-12-28）\n3. 建立測試覆蓋率週報回報機制（已完成，2025-01-05）\n4. 現場稽核確認改善成效（已驗證，覆蓋率達 99.8%）",
+    target_date: "2024-12-31",
+    verified_date: "2025-01-10",
+    status: "closed",
+    created_by: "u6",
+    created_at: "2024-11-02T10:00:00Z",
+    updated_at: "2025-01-10T16:00:00Z",
+  },
+  {
+    id: "sc3",
+    scar_number: "SCAR-2024-009",
+    supplier_id: "s3",
+    supplier_name: "光揚光罩科技股份有限公司",
+    supplier_code: "SUP-003",
+    evaluation_id: "e6",
+    triggered_score: 82.5,
+    triggered_tier: "B",
+    issue_description: "Q4 交期延誤 2 次，延誤時間分別為 5 天及 3 天，超出合約允許的 1 個工作天緩衝，直接影響公司晶圓投片計畫。",
+    category: "交期",
+    root_cause: "光罩版頻繁工程變更（ECO），導致生產排程衝突；空白基板（Blank Mask）來料管理不善，安全庫存不足，庫存耗盡後造成生產中斷 3 天。",
+    corrective_action: "1. 建立 ECO 變更影響評估機制，提前通知交期風險（已完成）\n2. 提高空白基板安全庫存至 3 週用量（庫存已補充至標準）\n3. 設立客戶端交期預警系統，提前 2 週通報可能延誤（已上線）\n4. 現場驗證：Q1-2025 交期達成率 100%，確認改善有效",
+    target_date: "2024-12-15",
+    verified_date: "2025-01-05",
+    status: "verified",
+    created_by: "u5",
+    created_at: "2024-10-31T10:00:00Z",
+    updated_at: "2025-01-05T11:00:00Z",
+  },
 ];
 
 // ================================================================

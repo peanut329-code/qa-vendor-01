@@ -1,13 +1,16 @@
 "use client";
 
+"use client";
+
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  LineChart, Line, PieChart, Pie, Cell, Legend,
+  LineChart, Line, PieChart, Pie, Cell,
 } from "recharts";
 import { SUPPLIERS, MONTHLY_TRENDS, TIER_DISTRIBUTION, CATEGORY_SCORES } from "@/lib/mock-data";
 import { getTierColor } from "@/lib/utils";
 import { TIER_LABELS } from "@/types";
 import type { SupplierTier } from "@/types";
+import { exportSuppliersToExcel } from "@/lib/export";
 
 const TOP_PERFORMERS = SUPPLIERS.filter((s) => s.tier === "A" || s.overall_score >= 85)
   .sort((a, b) => b.overall_score - a.overall_score)
@@ -26,11 +29,11 @@ export default function ReportsPage() {
           <div className="page-subtitle">供應商評鑑綜合分析與趨勢報告</div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="ev-btn ev-btn-secondary">
-            <i className="bi bi-funnel" /> 篩選期間
+          <button className="ev-btn ev-btn-secondary" onClick={() => exportSuppliersToExcel(SUPPLIERS)}>
+            <i className="bi bi-file-earmark-excel" /> Excel 匯出
           </button>
-          <button className="ev-btn ev-btn-primary">
-            <i className="bi bi-download" /> 匯出報表
+          <button className="ev-btn ev-btn-primary" onClick={() => window.print()}>
+            <i className="bi bi-printer" /> 列印報表
           </button>
         </div>
       </div>

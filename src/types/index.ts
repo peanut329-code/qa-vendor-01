@@ -2,6 +2,7 @@ export type UserRole = "super_admin" | "admin" | "manager" | "evaluator" | "view
 export type SupplierTier = "A" | "B" | "C" | "D";
 export type SupplierStatus = "active" | "inactive" | "suspended";
 export type EvaluationStatus = "draft" | "in_progress" | "completed" | "approved" | "rejected";
+export type ScarStatus = "open" | "in_progress" | "verified" | "closed" | "overdue";
 
 export interface User {
   id: string;
@@ -28,6 +29,16 @@ export interface Supplier {
   created_at: string;
 }
 
+export interface EvaluationScore {
+  criteria_id: string;
+  criteria_name: string;
+  category: string;
+  weight: number;
+  score: number;
+  weighted_score: number;
+  notes: string;
+}
+
 export interface Evaluation {
   id: string;
   supplier_id: string;
@@ -40,6 +51,7 @@ export interface Evaluation {
   total_score: number | null;
   tier: SupplierTier | null;
   notes: string;
+  scores?: EvaluationScore[];
   created_at: string;
   updated_at: string;
 }
@@ -55,6 +67,33 @@ export interface EvaluationCriteria {
   sort_order: number;
 }
 
+export interface Scar {
+  id: string;
+  scar_number: string;
+  supplier_id: string;
+  supplier_name: string;
+  supplier_code: string;
+  evaluation_id: string;
+  triggered_score: number;
+  triggered_tier: SupplierTier;
+  issue_description: string;
+  category: string;
+  root_cause: string;
+  corrective_action: string;
+  target_date: string;
+  verified_date: string | null;
+  status: ScarStatus;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MonthlyTrend {
+  month: string;
+  avg_score: number;
+  eval_count: number;
+}
+
 export interface KpiCard {
   title: string;
   value: string | number;
@@ -64,12 +103,7 @@ export interface KpiCard {
   color: "blue" | "green" | "orange" | "purple";
 }
 
-export interface MonthlyTrend {
-  month: string;
-  avg_score: number;
-  eval_count: number;
-}
-
+// ── Labels ──────────────────────────────────────────────
 export const ROLE_LABELS: Record<UserRole, string> = {
   super_admin: "系統管理員",
   admin: "企業管理員",
@@ -99,19 +133,18 @@ export const EVAL_STATUS_LABELS: Record<EvaluationStatus, string> = {
   rejected: "已退回",
 };
 
+export const SCAR_STATUS_LABELS: Record<ScarStatus, string> = {
+  open: "待處理",
+  in_progress: "改善中",
+  verified: "已驗證",
+  closed: "已結案",
+  overdue: "逾期",
+};
+
 export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   super_admin: ["*"],
-  admin: [
-    "dashboard.view", "suppliers.*", "evaluations.*",
-    "reports.*", "users.*", "settings.*",
-  ],
-  manager: [
-    "dashboard.view", "suppliers.view", "evaluations.view",
-    "evaluations.review", "reports.*",
-  ],
-  evaluator: [
-    "dashboard.view", "suppliers.view",
-    "evaluations.view", "evaluations.create", "evaluations.edit",
-  ],
-  viewer: ["dashboard.view", "suppliers.view", "evaluations.view", "reports.view"],
+  admin: ["dashboard.view", "suppliers.*", "evaluations.*", "reports.*", "users.*", "settings.*", "scar.*"],
+  manager: ["dashboard.view", "suppliers.view", "evaluations.view", "evaluations.review", "reports.*", "scar.*"],
+  evaluator: ["dashboard.view", "suppliers.view", "evaluations.view", "evaluations.create", "evaluations.edit"],
+  viewer: ["dashboard.view", "reports.view"],
 };
