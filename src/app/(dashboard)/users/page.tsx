@@ -390,7 +390,8 @@ export default function UsersPage() {
                   return (
                     <th key={r} style={{ padding: "6px 14px", textAlign: "center", background: "#F4F8FD", borderBottom: "1px solid #E0EBF8" }}>
                       <span className={`ev-badge ${c.bg} ${c.text}`} style={{ fontSize: "0.72rem" }}>
-                        {ROLE_LABELS[r]}
+                        {ROLE_LABELS_BILINGUAL[r].zh}
+                        <span style={{ opacity: 0.65, fontWeight: 400, marginLeft: 3 }}>{ROLE_LABELS_BILINGUAL[r].en}</span>
                       </span>
                     </th>
                   );
