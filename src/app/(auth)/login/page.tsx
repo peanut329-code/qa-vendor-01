@@ -20,7 +20,7 @@ export default function LoginPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!username.trim() || !password.trim()) {
-      setError("請輸入帳號與密碼");
+      setError("請輸入 Email 與密碼");
       return;
     }
     setIsSubmitting(true);
@@ -30,7 +30,7 @@ export default function LoginPage() {
     if (ok) {
       router.replace("/dashboard");
     } else {
-      setError("帳號或密碼錯誤，請重新輸入");
+      setError("Email 或密碼錯誤，請重新輸入");
       setIsSubmitting(false);
     }
   }
@@ -77,11 +77,11 @@ export default function LoginPage() {
                 marginBottom: 6,
               }}
             >
-              帳號
+              Email
             </label>
             <div style={{ position: "relative" }}>
               <i
-                className="bi bi-person-fill"
+                className="bi bi-envelope-fill"
                 style={{
                   position: "absolute",
                   left: 12,
@@ -94,8 +94,8 @@ export default function LoginPage() {
               />
               <input
                 className="ev-input"
-                type="text"
-                placeholder="請輸入帳號"
+                type="email"
+                placeholder="請輸入 Email"
                 value={username}
                 onChange={(e) => { setUsername(e.target.value); setError(""); }}
                 style={{ paddingLeft: 36 }}

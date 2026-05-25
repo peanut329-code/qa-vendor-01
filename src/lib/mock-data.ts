@@ -7,9 +7,13 @@ import type {
 // 登入帳號
 // ================================================================
 export const LOGIN_ACCOUNTS = [
-  { username: "admin01", password: "qa-16949", userId: "u1" },
-  { username: "viewer",  password: "viewer",   userId: "u2" },
-  { username: "visit03", password: "visit03",  userId: "u7" },
+  { username: "admin01@qa-vendor.com",      password: "qa-16949",       userId: "u1" },
+  { username: "viewer@qa-vendor.com",       password: "viewer",         userId: "u2" },
+  { username: "visit06@qa-vendor.com",      password: "visit06",        userId: "u7" },
+  { username: "lin.yating@qa-vendor.com",    password: "lin.yating",     userId: "u3" },
+  { username: "wang.jianguo@qa-vendor.com",  password: "wang.jianguo",   userId: "u4" },
+  { username: "li.meiling@qa-vendor.com",    password: "li.meiling",     userId: "u5" },
+  { username: "zhang.weicheng@qa-vendor.com",password: "zhang.weicheng", userId: "u6" },
 ];
 
 // ================================================================
@@ -22,7 +26,7 @@ export const DEMO_USERS: User[] = [
   { id: "u4", full_name: "王建國",    email: "wang.jianguo@qa-vendor.com",  role: "manager",   department: "品質部"   },
   { id: "u5", full_name: "李美玲",    email: "li.meiling@qa-vendor.com",    role: "evaluator", department: "採購部"   },
   { id: "u6", full_name: "張偉誠",    email: "zhang.weicheng@qa-vendor.com",role: "evaluator", department: "品質部"   },
-  { id: "u7", full_name: "visit03",  email: "visit03@qa-vendor.com",       role: "viewer",    department: "訪客"     },
+  { id: "u7", full_name: "visit06",  email: "visit06@qa-vendor.com",       role: "viewer",    department: "訪客"     },
 ];
 
 // ================================================================
