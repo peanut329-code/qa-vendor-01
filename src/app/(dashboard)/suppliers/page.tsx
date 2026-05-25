@@ -60,11 +60,9 @@ export default function SuppliersPage() {
           <div className="page-subtitle">共 {SUPPLIERS.length} 家供應商，{SUPPLIERS.filter((s) => s.status === "active").length} 家正常合作中</div>
         </div>
         {canEdit && (
-          <Link href="/suppliers/new">
-            <button className="ev-btn ev-btn-primary">
-              <i className="bi bi-plus-lg" /> 新增供應商
-            </button>
-          </Link>
+          <button className="ev-btn ev-btn-primary" onClick={() => router.push("/suppliers/new")}>
+            <i className="bi bi-plus-lg" /> 新增供應商
+          </button>
         )}
       </div>
 
