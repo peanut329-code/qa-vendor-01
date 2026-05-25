@@ -7,7 +7,7 @@ import type {
 // 登入帳號
 // ================================================================
 export const LOGIN_ACCOUNTS = [
-  { username: "admin01@qa-vendor.com",      password: "qa-16949",       userId: "u1" },
+  { username: "admin01@qa-vendor.com",      password: "qa16949",        userId: "u1" },
   { username: "viewer@qa-vendor.com",       password: "viewer",         userId: "u2" },
   { username: "visit06@qa-vendor.com",      password: "visit06",        userId: "u7" },
   { username: "lin.yating@qa-vendor.com",    password: "lin.yating",     userId: "u3" },
