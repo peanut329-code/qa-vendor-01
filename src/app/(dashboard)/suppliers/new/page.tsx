@@ -289,11 +289,9 @@ export default function NewSupplierPage() {
 
       {/* Actions */}
       <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-        <Link href="/suppliers">
-          <button className="ev-btn ev-btn-ghost">
-            <i className="bi bi-x-lg" /> 取消
-          </button>
-        </Link>
+        <button className="ev-btn ev-btn-ghost" onClick={() => router.push("/suppliers")}>
+          <i className="bi bi-x-lg" /> 取消
+        </button>
         <button
           className="ev-btn ev-btn-primary"
           disabled={submitting}

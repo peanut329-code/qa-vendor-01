@@ -57,12 +57,10 @@ export default function EvaluationsPage() {
           <div className="page-subtitle">管理所有供應商評鑑流程與紀錄</div>
         </div>
         {canCreate && (
-          <Link href="/evaluations/new">
-            <button className="ev-btn ev-btn-primary">
-              <i className="bi bi-plus-lg" />
-              新增評鑑
-            </button>
-          </Link>
+          <button className="ev-btn ev-btn-primary" onClick={() => router.push("/evaluations/new")}>
+            <i className="bi bi-plus-lg" />
+            新增評鑑
+          </button>
         )}
       </div>
 

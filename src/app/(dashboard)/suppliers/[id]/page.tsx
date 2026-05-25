@@ -1,6 +1,7 @@
 "use client";
 
 import { use } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
@@ -13,6 +14,7 @@ import { exportSuppliersToExcel } from "@/lib/export";
 
 export default function SupplierDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
   const { user } = useAuth();
 
   const supplier = SUPPLIERS.find((s) => s.id === id);
@@ -25,9 +27,7 @@ export default function SupplierDetailPage({ params }: { params: Promise<{ id: s
       <div style={{ textAlign: "center", padding: "80px 20px" }}>
         <i className="bi bi-building-x" style={{ fontSize: "3rem", color: "#C5D8F0", display: "block", marginBottom: 16 }} />
         <div style={{ fontSize: "1.1rem", fontWeight: 600, color: "#5F7A9B" }}>找不到此供應商</div>
-        <Link href="/suppliers">
-          <button className="ev-btn ev-btn-ghost" style={{ marginTop: 20 }}>← 回供應商列表</button>
-        </Link>
+        <button className="ev-btn ev-btn-ghost" style={{ marginTop: 20 }} onClick={() => router.push("/suppliers")}>← 回供應商列表</button>
       </div>
     );
   }
@@ -357,9 +357,7 @@ export default function SupplierDetailPage({ params }: { params: Promise<{ id: s
 
       {/* Footer */}
       <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-        <Link href="/suppliers">
-          <button className="ev-btn ev-btn-secondary">← 回供應商列表</button>
-        </Link>
+        <button className="ev-btn ev-btn-secondary" onClick={() => router.push("/suppliers")}>← 回供應商列表</button>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 "use client";
 
-import { use } from "react";
-import { useState } from "react";
+import { use, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
@@ -14,6 +14,7 @@ import { printEvaluationReport, exportEvaluationToExcel } from "@/lib/export";
 
 export default function EvaluationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
   const { user } = useAuth();
   const [status, setStatus] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
@@ -26,9 +27,7 @@ export default function EvaluationDetailPage({ params }: { params: Promise<{ id:
       <div style={{ textAlign: "center", padding: "80px 20px" }}>
         <i className="bi bi-file-earmark-x" style={{ fontSize: "3rem", color: "#C5D8F0", display: "block", marginBottom: 16 }} />
         <div style={{ fontSize: "1.1rem", fontWeight: 600, color: "#5F7A9B" }}>找不到此評鑑紀錄</div>
-        <Link href="/evaluations">
-          <button className="ev-btn ev-btn-ghost" style={{ marginTop: 20 }}>← 回評鑑列表</button>
-        </Link>
+        <button className="ev-btn ev-btn-ghost" style={{ marginTop: 20 }} onClick={() => router.push("/evaluations")}>← 回評鑑列表</button>
       </div>
     );
   }
@@ -241,16 +240,12 @@ export default function EvaluationDetailPage({ params }: { params: Promise<{ id:
 
       {/* Footer action */}
       <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-        <Link href={`/suppliers/${ev.supplier_id}`}>
-          <button className="ev-btn ev-btn-ghost">
-            <i className="bi bi-building" /> 查看供應商
-          </button>
-        </Link>
-        <Link href="/evaluations">
-          <button className="ev-btn ev-btn-secondary">
-            ← 回列表
-          </button>
-        </Link>
+        <button className="ev-btn ev-btn-ghost" onClick={() => router.push(`/suppliers/${ev.supplier_id}`)}>
+          <i className="bi bi-building" /> 查看供應商
+        </button>
+        <button className="ev-btn ev-btn-secondary" onClick={() => router.push("/evaluations")}>
+          ← 回列表
+        </button>
       </div>
     </div>
   );

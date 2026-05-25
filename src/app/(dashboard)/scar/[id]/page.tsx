@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { SCARS } from "@/lib/mock-data";
 import { getScarStatusColor, getTierColor, scoreColor } from "@/lib/utils";
@@ -28,6 +29,7 @@ const STATUS_ORDER: Record<ScarStatus, number> = {
 
 export default function ScarDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
   const { user } = useAuth();
 
   const scar = SCARS.find((sc) => sc.id === id);
@@ -39,9 +41,7 @@ export default function ScarDetailPage({ params }: { params: Promise<{ id: strin
       <div style={{ textAlign: "center", padding: "80px 20px" }}>
         <i className="bi bi-file-earmark-x" style={{ fontSize: "3rem", color: "#C5D8F0", display: "block", marginBottom: 16 }} />
         <div style={{ fontSize: "1.1rem", fontWeight: 600, color: "#5F7A9B" }}>找不到此 SCAR 記錄</div>
-        <Link href="/scar">
-          <button className="ev-btn ev-btn-ghost" style={{ marginTop: 20 }}>← 回 SCAR 列表</button>
-        </Link>
+        <button className="ev-btn ev-btn-ghost" style={{ marginTop: 20 }} onClick={() => router.push("/scar")}>← 回 SCAR 列表</button>
       </div>
     );
   }
@@ -347,9 +347,7 @@ export default function ScarDetailPage({ params }: { params: Promise<{ id: strin
 
       {/* Footer */}
       <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-        <Link href="/scar">
-          <button className="ev-btn ev-btn-secondary">← 回 SCAR 列表</button>
-        </Link>
+        <button className="ev-btn ev-btn-secondary" onClick={() => router.push("/scar")}>← 回 SCAR 列表</button>
       </div>
     </div>
   );

@@ -355,11 +355,9 @@ function NewEvaluationContent() {
 
       {/* Actions */}
       <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-        <Link href="/evaluations">
-          <button className="ev-btn ev-btn-ghost">
-            <i className="bi bi-x-lg" /> 取消
-          </button>
-        </Link>
+        <button className="ev-btn ev-btn-ghost" onClick={() => router.push("/evaluations")}>
+          <i className="bi bi-x-lg" /> 取消
+        </button>
         <button
           className="ev-btn ev-btn-secondary"
           disabled={submitting}
