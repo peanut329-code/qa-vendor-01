@@ -9,6 +9,7 @@ import type {
 export const LOGIN_ACCOUNTS = [
   { username: "admin01", password: "qa-16949", userId: "u1" },
   { username: "viewer",  password: "viewer",   userId: "u2" },
+  { username: "visit03", password: "visit03",  userId: "u7" },
 ];
 
 // ================================================================
@@ -21,6 +22,7 @@ export const DEMO_USERS: User[] = [
   { id: "u4", full_name: "王建國",    email: "wang.jianguo@qa-vendor.com",  role: "manager",   department: "品質部"   },
   { id: "u5", full_name: "李美玲",    email: "li.meiling@qa-vendor.com",    role: "evaluator", department: "採購部"   },
   { id: "u6", full_name: "張偉誠",    email: "zhang.weicheng@qa-vendor.com",role: "evaluator", department: "品質部"   },
+  { id: "u7", full_name: "visit03",  email: "visit03@qa-vendor.com",       role: "viewer",    department: "訪客"     },
 ];
 
 // ================================================================

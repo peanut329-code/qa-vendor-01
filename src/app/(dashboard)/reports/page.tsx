@@ -1,7 +1,5 @@
 "use client";
 
-"use client";
-
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell,
@@ -11,6 +9,7 @@ import { getTierColor } from "@/lib/utils";
 import { TIER_LABELS } from "@/types";
 import type { SupplierTier } from "@/types";
 import { exportSuppliersToExcel } from "@/lib/export";
+import { useAuth } from "@/contexts/AuthContext";
 
 const TOP_PERFORMERS = SUPPLIERS.filter((s) => s.tier === "A" || s.overall_score >= 85)
   .sort((a, b) => b.overall_score - a.overall_score)
@@ -20,6 +19,9 @@ const NEEDS_ATTENTION = SUPPLIERS.filter((s) => s.tier === "C" || s.tier === "D"
   .sort((a, b) => a.overall_score - b.overall_score);
 
 export default function ReportsPage() {
+  const { user } = useAuth();
+  const canExport = user && ["super_admin", "admin", "manager"].includes(user.role);
+
   return (
     <div>
       {/* Header */}
@@ -29,9 +31,11 @@ export default function ReportsPage() {
           <div className="page-subtitle">供應商評鑑綜合分析與趨勢報告</div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="ev-btn ev-btn-secondary" onClick={() => exportSuppliersToExcel(SUPPLIERS)}>
-            <i className="bi bi-file-earmark-excel" /> Excel 匯出
-          </button>
+          {canExport && (
+            <button className="ev-btn ev-btn-secondary" onClick={() => exportSuppliersToExcel(SUPPLIERS)}>
+              <i className="bi bi-file-earmark-excel" /> Excel 匯出
+            </button>
+          )}
           <button className="ev-btn ev-btn-primary" onClick={() => window.print()}>
             <i className="bi bi-printer" /> 列印報表
           </button>

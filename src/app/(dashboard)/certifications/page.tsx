@@ -31,14 +31,16 @@ export default function CertificationsPage() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    if (user && !["super_admin", "admin", "manager"].includes(user.role)) {
+    if (user && !["super_admin", "admin", "manager", "viewer"].includes(user.role)) {
       router.replace("/dashboard");
     }
   }, [user, router]);
 
-  if (!user || !["super_admin", "admin", "manager"].includes(user.role)) {
+  if (!user || !["super_admin", "admin", "manager", "viewer"].includes(user.role)) {
     return <AccessDenied />;
   }
+
+  const canExport = user && ["super_admin", "admin", "manager"].includes(user.role);
 
   // Compute statuses
   const certsWithStatus = useMemo(
@@ -68,14 +70,16 @@ export default function CertificationsPage() {
           <div className="page-title">認證效期管理</div>
           <div className="page-subtitle">追蹤各供應商品質認證有效期，提前預警即將到期項目</div>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button className="ev-btn ev-btn-ghost" onClick={() => exportCertificationsToExcel(filtered)}>
-            <i className="bi bi-file-earmark-excel" /> Excel 匯出
-          </button>
-          <button className="ev-btn ev-btn-primary">
-            <i className="bi bi-plus-lg" /> 新增認證
-          </button>
-        </div>
+        {canExport && (
+          <div style={{ display: "flex", gap: 8 }}>
+            <button className="ev-btn ev-btn-ghost" onClick={() => exportCertificationsToExcel(filtered)}>
+              <i className="bi bi-file-earmark-excel" /> Excel 匯出
+            </button>
+            <button className="ev-btn ev-btn-primary">
+              <i className="bi bi-plus-lg" /> 新增認證
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Alert banners */}

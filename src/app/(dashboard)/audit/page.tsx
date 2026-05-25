@@ -52,14 +52,16 @@ export default function AuditPage() {
   const [typeFilter, setTypeFilter] = useState<AuditEventType | "ALL">("ALL");
 
   useEffect(() => {
-    if (user && !["super_admin", "admin", "manager"].includes(user.role)) {
+    if (user && !["super_admin", "admin", "manager", "viewer"].includes(user.role)) {
       router.replace("/dashboard");
     }
   }, [user, router]);
 
-  if (!user || !["super_admin", "admin", "manager"].includes(user.role)) {
+  if (!user || !["super_admin", "admin", "manager", "viewer"].includes(user.role)) {
     return <AccessDenied />;
   }
+
+  const canExport = user && ["super_admin", "admin", "manager"].includes(user.role);
 
   // Events for current view month
   const monthEvents = useMemo(() => getMonthEvents(AUDIT_EVENTS, year, month), [year, month]);
@@ -121,9 +123,11 @@ export default function AuditPage() {
           <div className="page-subtitle">追蹤評鑑排程、認證複查、SCAR 到期與現場稽核事項</div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="ev-btn ev-btn-ghost" onClick={() => exportAuditEventsToExcel(upcomingEvents)}>
-            <i className="bi bi-file-earmark-excel" /> Excel 匯出
-          </button>
+          {canExport && (
+            <button className="ev-btn ev-btn-ghost" onClick={() => exportAuditEventsToExcel(upcomingEvents)}>
+              <i className="bi bi-file-earmark-excel" /> Excel 匯出
+            </button>
+          )}
           {/* View toggle */}
           <div style={{ display: "flex", border: "1.5px solid #C5D8F0", borderRadius: 8, overflow: "hidden" }}>
             {(["calendar", "list"] as ViewMode[]).map((v) => (

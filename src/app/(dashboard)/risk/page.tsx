@@ -53,10 +53,11 @@ export default function RiskPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [view, setView] = useState<"matrix" | "list">("matrix");
 
-  if (!user || !["super_admin", "admin", "manager"].includes(user.role)) {
+  if (!user || !["super_admin", "admin", "manager", "viewer"].includes(user.role)) {
     return <AccessDenied />;
   }
 
+  const canExport = user && ["super_admin", "admin", "manager"].includes(user.role);
   const selectedRisk = selectedId ? SUPPLIER_RISKS.find((r) => r.supplier_id === selectedId) : null;
 
   const riskCounts: Record<RiskLevel, number> = { low: 0, medium: 0, high: 0, critical: 0 };
@@ -96,9 +97,11 @@ export default function RiskPage() {
               </button>
             ))}
           </div>
-          <button className="ev-btn ev-btn-ghost" onClick={() => exportRiskToExcel(SUPPLIER_RISKS)}>
-            <i className="bi bi-file-earmark-excel" /> Excel 匯出
-          </button>
+          {canExport && (
+            <button className="ev-btn ev-btn-ghost" onClick={() => exportRiskToExcel(SUPPLIER_RISKS)}>
+              <i className="bi bi-file-earmark-excel" /> Excel 匯出
+            </button>
+          )}
         </div>
       </div>
 

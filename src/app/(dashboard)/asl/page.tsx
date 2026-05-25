@@ -41,9 +41,11 @@ export default function AslPage() {
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  if (!user || !["super_admin", "admin", "manager"].includes(user.role)) {
+  if (!user || !["super_admin", "admin", "manager", "viewer"].includes(user.role)) {
     return <AccessDenied />;
   }
+
+  const canExport = user && ["super_admin", "admin", "manager"].includes(user.role);
 
   const counts = useMemo(() => {
     const obj = { approved: 0, conditional: 0, probation: 0, suspended: 0 };
@@ -90,14 +92,16 @@ export default function AslPage() {
           <div className="page-title">合格供應商名單（ASL）</div>
           <div className="page-subtitle">Approved Supplier List — 追蹤供應商核准狀態、範圍及複評期限</div>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button className="ev-btn ev-btn-ghost" onClick={() => exportAslToExcel(filtered)}>
-            <i className="bi bi-file-earmark-excel" /> Excel 匯出
-          </button>
-          <button className="ev-btn ev-btn-primary">
-            <i className="bi bi-plus-lg" /> 新增記錄
-          </button>
-        </div>
+        {canExport && (
+          <div style={{ display: "flex", gap: 8 }}>
+            <button className="ev-btn ev-btn-ghost" onClick={() => exportAslToExcel(filtered)}>
+              <i className="bi bi-file-earmark-excel" /> Excel 匯出
+            </button>
+            <button className="ev-btn ev-btn-primary">
+              <i className="bi bi-plus-lg" /> 新增記錄
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Warning banners */}

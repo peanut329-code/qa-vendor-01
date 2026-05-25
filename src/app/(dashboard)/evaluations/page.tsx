@@ -34,12 +34,6 @@ export default function EvaluationsPage() {
   const [statusFilter, setStatusFilter] = useState<EvaluationStatus | "ALL">("ALL");
   const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    if (user && user.role === "viewer") router.replace("/dashboard");
-  }, [user, router]);
-
-  if (user?.role === "viewer") return <AccessDenied />;
-
   const canCreate = user && ["super_admin", "admin", "manager", "evaluator"].includes(user.role);
   const canReview = user && ["super_admin", "admin", "manager"].includes(user.role);
 

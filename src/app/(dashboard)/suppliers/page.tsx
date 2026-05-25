@@ -30,12 +30,6 @@ export default function SuppliersPage() {
   const [categoryFilter, setCategoryFilter] = useState("全部");
   const [statusFilter, setStatusFilter] = useState<SupplierStatus | "ALL">("ALL");
 
-  useEffect(() => {
-    if (user && user.role === "viewer") router.replace("/dashboard");
-  }, [user, router]);
-
-  if (user?.role === "viewer") return <AccessDenied />;
-
   const canEdit = user && ["super_admin", "admin"].includes(user.role);
 
   const filtered = SUPPLIERS.filter((s) => {

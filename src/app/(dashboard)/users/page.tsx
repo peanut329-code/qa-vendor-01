@@ -8,11 +8,167 @@ import { getRoleColor, formatDate } from "@/lib/utils";
 import { ROLE_LABELS } from "@/types";
 import type { UserRole } from "@/types";
 
+const ROLE_KEYS_INVITABLE: UserRole[] = ["admin", "manager", "evaluator", "viewer"];
+
+function InviteModal({ onClose }: { onClose: () => void }) {
+  const [form, setForm] = useState({ full_name: "", username: "", email: "", department: "", role: "viewer" as UserRole });
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  function set(k: string, v: string) { setForm((p) => ({ ...p, [k]: v })); setErrors((p) => ({ ...p, [k]: "" })); }
+
+  function validate() {
+    const e: Record<string, string> = {};
+    if (!form.full_name.trim()) e.full_name = "請輸入姓名";
+    if (!form.username.trim()) e.username = "請輸入帳號";
+    else if (!/^[a-z0-9_]+$/.test(form.username)) e.username = "帳號只允許小寫英文、數字、底線";
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Email 格式不正確";
+    if (!form.department.trim()) e.department = "請輸入部門";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  }
+
+  async function handleSubmit() {
+    if (!validate()) return;
+    setSubmitting(true);
+    await new Promise((r) => setTimeout(r, 700));
+    setSubmitting(false);
+    setDone(true);
+  }
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(15,30,60,0.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ background: "white", borderRadius: 16, width: 480, maxWidth: "94vw", boxShadow: "0 20px 60px rgba(0,0,0,0.2)", overflow: "hidden" }}>
+        {/* Modal header */}
+        <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #EAF1FB", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <div style={{ fontWeight: 800, color: "#1E3A5F", fontSize: "1rem" }}>邀請新使用者</div>
+            <div style={{ fontSize: "0.78rem", color: "#5F7A9B", marginTop: 2 }}>設定帳號資料與角色權限</div>
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#94AEC8", fontSize: "1.2rem", padding: 4 }}>
+            <i className="bi bi-x-lg" />
+          </button>
+        </div>
+
+        {done ? (
+          <div style={{ padding: "40px 24px", textAlign: "center" }}>
+            <div style={{ width: 60, height: 60, borderRadius: "50%", background: "linear-gradient(135deg,#22C55E,#16A34A)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", boxShadow: "0 4px 16px rgba(34,197,94,0.3)" }}>
+              <i className="bi bi-check-lg" style={{ color: "white", fontSize: "1.6rem" }} />
+            </div>
+            <div style={{ fontWeight: 800, color: "#1E3A5F", fontSize: "1.05rem", marginBottom: 6 }}>使用者已建立</div>
+            <div style={{ color: "#5F7A9B", fontSize: "0.85rem", marginBottom: 4 }}>
+              <strong>{form.full_name}</strong>（{form.username}）
+            </div>
+            <div style={{ color: "#94AEC8", fontSize: "0.78rem", marginBottom: 20 }}>
+              初始密碼與帳號相同，首次登入請提醒使用者修改密碼。
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+              <button className="ev-btn ev-btn-ghost" onClick={onClose}>關閉</button>
+              <button className="ev-btn ev-btn-primary" onClick={() => { setDone(false); setForm({ full_name: "", username: "", email: "", department: "", role: "viewer" }); }}>
+                繼續新增
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ padding: "20px 24px 24px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              {/* Full name */}
+              <div>
+                <label style={{ fontSize: "0.78rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 5 }}>
+                  姓名 <span style={{ color: "#EF4444" }}>*</span>
+                </label>
+                <input className="ev-input" style={{ width: "100%", borderColor: errors.full_name ? "#EF4444" : undefined }}
+                  placeholder="例：王小明" value={form.full_name} onChange={(e) => set("full_name", e.target.value)} />
+                {errors.full_name && <div style={{ color: "#EF4444", fontSize: "0.7rem", marginTop: 3 }}>{errors.full_name}</div>}
+              </div>
+              {/* Username */}
+              <div>
+                <label style={{ fontSize: "0.78rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 5 }}>
+                  帳號 <span style={{ color: "#EF4444" }}>*</span>
+                </label>
+                <input className="ev-input" style={{ width: "100%", borderColor: errors.username ? "#EF4444" : undefined }}
+                  placeholder="例：wang01" value={form.username} onChange={(e) => set("username", e.target.value.toLowerCase())} />
+                {errors.username && <div style={{ color: "#EF4444", fontSize: "0.7rem", marginTop: 3 }}>{errors.username}</div>}
+              </div>
+              {/* Email */}
+              <div>
+                <label style={{ fontSize: "0.78rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 5 }}>電子郵件</label>
+                <input className="ev-input" style={{ width: "100%", borderColor: errors.email ? "#EF4444" : undefined }}
+                  type="email" placeholder="email@company.com" value={form.email} onChange={(e) => set("email", e.target.value)} />
+                {errors.email && <div style={{ color: "#EF4444", fontSize: "0.7rem", marginTop: 3 }}>{errors.email}</div>}
+              </div>
+              {/* Department */}
+              <div>
+                <label style={{ fontSize: "0.78rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 5 }}>
+                  部門 <span style={{ color: "#EF4444" }}>*</span>
+                </label>
+                <input className="ev-input" style={{ width: "100%", borderColor: errors.department ? "#EF4444" : undefined }}
+                  placeholder="例：採購部" value={form.department} onChange={(e) => set("department", e.target.value)} />
+                {errors.department && <div style={{ color: "#EF4444", fontSize: "0.7rem", marginTop: 3 }}>{errors.department}</div>}
+              </div>
+            </div>
+
+            {/* Role */}
+            <div style={{ marginTop: 14 }}>
+              <label style={{ fontSize: "0.78rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 8 }}>
+                角色權限 <span style={{ color: "#EF4444" }}>*</span>
+              </label>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                {ROLE_KEYS_INVITABLE.map((r) => {
+                  const isActive = form.role === r;
+                  const descMap: Record<string, string> = {
+                    admin:     "完整管理權限（含使用者）",
+                    manager:   "評鑑審核與稽核管理",
+                    evaluator: "填寫評鑑表單",
+                    viewer:    "唯讀，可看所有資料，無法編輯或匯出",
+                  };
+                  return (
+                    <button key={r} type="button" onClick={() => set("role", r)}
+                      style={{
+                        textAlign: "left", padding: "10px 12px", borderRadius: 8, cursor: "pointer",
+                        border: `2px solid ${isActive ? "#5B8FD9" : "#E0EBF8"}`,
+                        background: isActive ? "#EDF3FA" : "white",
+                        transition: "all 0.15s",
+                      }}>
+                      <div style={{ fontWeight: 700, color: isActive ? "#1E3A5F" : "#5F7A9B", fontSize: "0.82rem" }}>
+                        {ROLE_LABELS[r]}
+                      </div>
+                      <div style={{ fontSize: "0.68rem", color: "#94AEC8", marginTop: 2 }}>{descMap[r]}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Password hint */}
+            <div style={{ marginTop: 14, background: "#F7FAFF", border: "1px solid #EAF1FB", borderRadius: 8, padding: "8px 12px", fontSize: "0.75rem", color: "#5F7A9B" }}>
+              <i className="bi bi-info-circle-fill" style={{ color: "#5B8FD9", marginRight: 6 }} />
+              初始密碼與帳號相同，請提醒使用者登入後修改。
+            </div>
+
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
+              <button className="ev-btn ev-btn-ghost" onClick={onClose}>取消</button>
+              <button className="ev-btn ev-btn-primary" disabled={submitting} onClick={handleSubmit}>
+                {submitting
+                  ? <><i className="bi bi-arrow-repeat" style={{ animation: "spin 1s linear infinite" }} /> 建立中...</>
+                  : <><i className="bi bi-person-plus-fill" /> 建立帳號</>}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function UsersPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [roleFilter, setRoleFilter] = useState<UserRole | "ALL">("ALL");
   const [search, setSearch] = useState("");
+  const [showInvite, setShowInvite] = useState(false);
 
   if (!user || !["super_admin", "admin"].includes(user.role)) {
     return (
@@ -50,9 +206,8 @@ export default function UsersPage() {
           <div className="page-subtitle">管理系統使用者帳號及角色權限</div>
         </div>
         {user.role === "super_admin" && (
-          <button className="ev-btn ev-btn-primary">
-            <i className="bi bi-person-plus-fill" />
-            邀請使用者
+          <button className="ev-btn ev-btn-primary" onClick={() => setShowInvite(true)}>
+            <i className="bi bi-person-plus-fill" /> 邀請使用者
           </button>
         )}
       </div>
@@ -265,6 +420,8 @@ export default function UsersPage() {
           </table>
         </div>
       </div>
+
+      {showInvite && <InviteModal onClose={() => setShowInvite(false)} />}
     </div>
   );
 }

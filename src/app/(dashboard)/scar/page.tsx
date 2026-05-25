@@ -36,14 +36,16 @@ export default function ScarPage() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    if (user && !["super_admin", "admin", "manager"].includes(user.role)) {
+    if (user && !["super_admin", "admin", "manager", "viewer"].includes(user.role)) {
       router.replace("/dashboard");
     }
   }, [user, router]);
 
-  if (!user || !["super_admin", "admin", "manager"].includes(user.role)) {
+  if (!user || !["super_admin", "admin", "manager", "viewer"].includes(user.role)) {
     return <AccessDenied />;
   }
+
+  const canExport = user && ["super_admin", "admin", "manager"].includes(user.role);
 
   const filtered = SCARS.filter((sc) => {
     const matchStatus = statusFilter === "ALL" || sc.status === statusFilter;
@@ -77,14 +79,16 @@ export default function ScarPage() {
           <div className="page-title">SCAR 矯正行動管理</div>
           <div className="page-subtitle">Supplier Corrective Action Request — 追蹤供應商品質問題改善進度</div>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button className="ev-btn ev-btn-ghost" onClick={() => exportScarsToExcel(filtered)}>
-            <i className="bi bi-file-earmark-excel" /> 匯出 Excel
-          </button>
-          <button className="ev-btn ev-btn-primary">
-            <i className="bi bi-plus-lg" /> 新增 SCAR
-          </button>
-        </div>
+        {canExport && (
+          <div style={{ display: "flex", gap: 8 }}>
+            <button className="ev-btn ev-btn-ghost" onClick={() => exportScarsToExcel(filtered)}>
+              <i className="bi bi-file-earmark-excel" /> 匯出 Excel
+            </button>
+            <button className="ev-btn ev-btn-primary">
+              <i className="bi bi-plus-lg" /> 新增 SCAR
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Status stat cards */}
