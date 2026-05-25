@@ -266,65 +266,14 @@ export default function UsersPage() {
         </span>
       </div>
 
-      {/* Permission matrix card */}
-      <div className="ev-card" style={{ padding: "18px 22px", marginBottom: 18 }}>
-        <div style={{ fontWeight: 700, color: "#1E3A5F", fontSize: "0.9rem", marginBottom: 14 }}>
-          <i className="bi bi-shield-fill-check" style={{ color: "#5B8FD9", marginRight: 6 }} />
-          角色權限對照表
-        </div>
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.78rem" }}>
-            <thead>
-              <tr>
-                <th style={{ padding: "6px 14px", textAlign: "left", color: "#5F7A9B", fontWeight: 600, background: "#F4F8FD", borderBottom: "1px solid #E0EBF8" }}>
-                  功能模組
-                </th>
-                {ROLE_KEYS.map((r) => {
-                  const c = getRoleColor(r);
-                  return (
-                    <th key={r} style={{ padding: "6px 14px", textAlign: "center", background: "#F4F8FD", borderBottom: "1px solid #E0EBF8" }}>
-                      <span className={`ev-badge ${c.bg} ${c.text}`} style={{ fontSize: "0.72rem" }}>
-                        {ROLE_LABELS[r]}
-                      </span>
-                    </th>
-                  );
-                })}
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                { module: "儀表板", perms: [true, true, true, true, true] },
-                { module: "供應商管理（查看）", perms: [true, true, true, true, true] },
-                { module: "供應商管理（新增/編輯）", perms: [true, true, false, false, false] },
-                { module: "評鑑作業（查看）", perms: [true, true, true, true, true] },
-                { module: "評鑑作業（建立/填寫）", perms: [true, true, true, true, false] },
-                { module: "評鑑作業（審核核准）", perms: [true, true, true, false, false] },
-                { module: "報表分析", perms: [true, true, true, false, true] },
-                { module: "使用者管理", perms: [true, true, false, false, false] },
-                { module: "系統設定", perms: [true, true, false, false, false] },
-              ].map(({ module, perms }) => (
-                <tr key={module}>
-                  <td style={{ padding: "8px 14px", color: "#1E3A5F", borderBottom: "1px solid #EEF4FC" }}>
-                    {module}
-                  </td>
-                  {perms.map((p, i) => (
-                    <td key={i} style={{ textAlign: "center", padding: "8px 14px", borderBottom: "1px solid #EEF4FC" }}>
-                      {p ? (
-                        <i className="bi bi-check-circle-fill" style={{ color: "#22C55E", fontSize: "0.95rem" }} />
-                      ) : (
-                        <i className="bi bi-x-circle" style={{ color: "#C5D8F0", fontSize: "0.95rem" }} />
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
       {/* User table */}
-      <div className="ev-card" style={{ overflow: "hidden" }}>
+      <div className="ev-card" style={{ overflow: "hidden", marginBottom: 18 }}>
+        <div style={{ padding: "14px 18px", borderBottom: "1px solid #EAF1FB" }}>
+          <span style={{ fontWeight: 700, color: "#1E3A5F", fontSize: "0.9rem" }}>
+            <i className="bi bi-people-fill" style={{ color: "#5B8FD9", marginRight: 6 }} />
+            帳號列表
+          </span>
+        </div>
         <div style={{ overflowX: "auto" }}>
           <table className="ev-table">
             <thead>
@@ -418,6 +367,63 @@ export default function UsersPage() {
                   </tr>
                 );
               })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Permission matrix card */}
+      <div className="ev-card" style={{ padding: "18px 22px", marginBottom: 18 }}>
+        <div style={{ fontWeight: 700, color: "#1E3A5F", fontSize: "0.9rem", marginBottom: 14 }}>
+          <i className="bi bi-shield-fill-check" style={{ color: "#5B8FD9", marginRight: 6 }} />
+          權限說明
+        </div>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.78rem" }}>
+            <thead>
+              <tr>
+                <th style={{ padding: "6px 14px", textAlign: "left", color: "#5F7A9B", fontWeight: 600, background: "#F4F8FD", borderBottom: "1px solid #E0EBF8" }}>
+                  功能模組
+                </th>
+                {ROLE_KEYS.map((r) => {
+                  const c = getRoleColor(r);
+                  return (
+                    <th key={r} style={{ padding: "6px 14px", textAlign: "center", background: "#F4F8FD", borderBottom: "1px solid #E0EBF8" }}>
+                      <span className={`ev-badge ${c.bg} ${c.text}`} style={{ fontSize: "0.72rem" }}>
+                        {ROLE_LABELS[r]}
+                      </span>
+                    </th>
+                  );
+                })}
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { module: "儀表板", perms: [true, true, true, true, true] },
+                { module: "供應商管理（查看）", perms: [true, true, true, true, true] },
+                { module: "供應商管理（新增/編輯）", perms: [true, true, false, false, false] },
+                { module: "評鑑作業（查看）", perms: [true, true, true, true, true] },
+                { module: "評鑑作業（建立/填寫）", perms: [true, true, true, true, false] },
+                { module: "評鑑作業（審核核准）", perms: [true, true, true, false, false] },
+                { module: "報表分析", perms: [true, true, true, false, true] },
+                { module: "使用者管理", perms: [true, true, false, false, false] },
+                { module: "系統設定", perms: [true, true, false, false, false] },
+              ].map(({ module, perms }) => (
+                <tr key={module}>
+                  <td style={{ padding: "8px 14px", color: "#1E3A5F", borderBottom: "1px solid #EEF4FC" }}>
+                    {module}
+                  </td>
+                  {perms.map((p, i) => (
+                    <td key={i} style={{ textAlign: "center", padding: "8px 14px", borderBottom: "1px solid #EEF4FC" }}>
+                      {p ? (
+                        <i className="bi bi-check-circle-fill" style={{ color: "#22C55E", fontSize: "0.95rem" }} />
+                      ) : (
+                        <i className="bi bi-x-circle" style={{ color: "#C5D8F0", fontSize: "0.95rem" }} />
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
