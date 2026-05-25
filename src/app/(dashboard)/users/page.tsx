@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { DEMO_USERS } from "@/lib/mock-data";
 import { getRoleColor, formatDate } from "@/lib/utils";
-import { ROLE_LABELS } from "@/types";
+import { ROLE_LABELS, ROLE_LABELS_BILINGUAL } from "@/types";
 import type { UserRole } from "@/types";
 
 const ROLE_KEYS_INVITABLE: UserRole[] = ["admin", "manager", "evaluator", "viewer"];
@@ -243,7 +243,9 @@ export default function UsersPage() {
                 fontSize: "0.8rem",
               }}
             >
-              {ROLE_LABELS[r]} ({roleCounts[r] ?? 0})
+              {ROLE_LABELS_BILINGUAL[r].zh}
+              <span style={{ opacity: 0.65, fontWeight: 400, marginLeft: 3 }}>{ROLE_LABELS_BILINGUAL[r].en}</span>
+              {" "}({roleCounts[r] ?? 0})
             </button>
           );
         })}

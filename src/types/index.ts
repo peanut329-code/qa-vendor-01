@@ -112,6 +112,14 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   viewer: "唯讀觀察者",
 };
 
+export const ROLE_LABELS_BILINGUAL: Record<UserRole, { zh: string; en: string }> = {
+  super_admin: { zh: "系統管理員", en: "Super Admin" },
+  admin:       { zh: "企業管理員", en: "Admin" },
+  manager:     { zh: "評鑑主管",  en: "Manager" },
+  evaluator:   { zh: "評鑑人員",  en: "Evaluator" },
+  viewer:      { zh: "唯讀觀察者", en: "Viewer" },
+};
+
 export const TIER_LABELS: Record<SupplierTier, string> = {
   A: "A 優選",
   B: "B 合格",
