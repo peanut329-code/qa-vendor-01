@@ -192,7 +192,7 @@ export default function Sidebar() {
                 textTransform: "uppercase",
               }}
             >
-              管理設定
+              管理
             </div>
             {visibleAdminNav.map((item) => (
               <Link
