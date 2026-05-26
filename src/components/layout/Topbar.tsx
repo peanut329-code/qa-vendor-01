@@ -5,12 +5,17 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ROLE_LABELS } from "@/types";
 
 const PAGE_META: Record<string, { title: string; icon: string }> = {
-  "/dashboard":   { title: "儀表板",     icon: "bi-grid-1x2-fill" },
-  "/suppliers":   { title: "供應商管理", icon: "bi-building-fill" },
-  "/evaluations": { title: "評鑑作業",   icon: "bi-clipboard2-check-fill" },
-  "/reports":     { title: "報表分析",   icon: "bi-bar-chart-line-fill" },
-  "/users":       { title: "使用者管理", icon: "bi-people-fill" },
-  "/settings":    { title: "系統設定",   icon: "bi-gear-fill" },
+  "/dashboard":      { title: "儀表板",         icon: "bi-speedometer2" },
+  "/suppliers":      { title: "供應商管理",     icon: "bi-building-fill" },
+  "/evaluations":    { title: "評鑑作業",       icon: "bi-clipboard2-check-fill" },
+  "/scar":           { title: "SCAR 管理",      icon: "bi-exclamation-triangle-fill" },
+  "/certifications": { title: "認證效期",       icon: "bi-patch-check-fill" },
+  "/audit":          { title: "稽核行事曆",     icon: "bi-calendar3-week-fill" },
+  "/asl":            { title: "合格供應商名單", icon: "bi-list-check" },
+  "/risk":           { title: "風險評估矩陣",   icon: "bi-diagram-3-fill" },
+  "/reports":        { title: "報表分析",       icon: "bi-bar-chart-line-fill" },
+  "/users":          { title: "使用者管理",     icon: "bi-people-fill" },
+  "/settings":       { title: "系統設定",       icon: "bi-gear-fill" },
 };
 
 export default function Topbar() {
