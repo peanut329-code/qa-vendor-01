@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [keepLogin, setKeepLogin] = useState(false);
 
   useEffect(() => {
     if (user) router.replace("/dashboard");
@@ -151,7 +152,7 @@ export default function LoginPage() {
           <section className="login-form-wrap">
             <form onSubmit={handleSubmit} autoComplete="off">
               <div className="field">
-                <label className="field-label">Email</label>
+                <label className="field-label">電子郵件 EMAIL</label>
                 <div className="field-input-wrap">
                   <i className="bi bi-envelope field-icon" />
                   <input
@@ -186,6 +187,25 @@ export default function LoginPage() {
                   </button>
                 </div>
               </div>
+
+              {/* 保持登入 */}
+              <label style={{
+                display: "flex", alignItems: "center", gap: 9,
+                marginBottom: 16, cursor: "pointer", userSelect: "none",
+              }}>
+                <input
+                  type="checkbox"
+                  checked={keepLogin}
+                  onChange={(e) => setKeepLogin(e.target.checked)}
+                  style={{
+                    width: 17, height: 17, cursor: "pointer",
+                    accentColor: "var(--primary)",
+                  }}
+                />
+                <span style={{ fontSize: "0.88rem", color: "var(--text-muted)", fontWeight: 500 }}>
+                  保持登入
+                </span>
+              </label>
 
               {error && (
                 <div style={{
