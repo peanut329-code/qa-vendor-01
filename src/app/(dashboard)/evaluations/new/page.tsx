@@ -19,15 +19,27 @@ function NewEvaluationContent() {
 
   const [supplierId, setSupplierId] = useState(searchParams.get("supplier") ?? "");
   const [period, setPeriod] = useState("2027-Q4");
-  const [scores, setScores] = useState<Record<string, number>>(() =>
-    Object.fromEntries(CRITERIA.map((c) => [c.id, 80]))
-  );
-  const [notesMap, setNotesMap] = useState<Record<string, string>>(() =>
-    Object.fromEntries(CRITERIA.map((c) => [c.id, ""]))
-  );
+  const [criteriaList, setCriteriaList] = useState<any[]>([]);
+  const [scores, setScores] = useState<Record<string, number>>({});
+  const [notesMap, setNotesMap] = useState<Record<string, string>>({});
   const [evalNotes, setEvalNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("settings-criteria");
+      let list = CRITERIA;
+      if (saved) {
+        try {
+          list = JSON.parse(saved);
+        } catch (e) {}
+      }
+      setCriteriaList(list);
+      setScores(Object.fromEntries(list.map((c) => [c.id, 80])));
+      setNotesMap(Object.fromEntries(list.map((c) => [c.id, ""])));
+    }
+  }, []);
 
   // Access guard
   useEffect(() => {
@@ -39,8 +51,8 @@ function NewEvaluationContent() {
   // Live total
   const total = useMemo(
     () =>
-      CRITERIA.reduce((acc, c) => acc + (scores[c.id] ?? 0) * c.weight / 100, 0),
-    [scores]
+      criteriaList.reduce((acc, c) => acc + (scores[c.id] ?? 0) * c.weight / 100, 0),
+    [scores, criteriaList]
   );
   const tier = scoreToTier(total);
   const tierC = getTierColor(tier);
@@ -88,7 +100,8 @@ function NewEvaluationContent() {
           <button className="ev-btn ev-btn-primary" onClick={() => {
             setSubmitted(false);
             setSupplierId("");
-            setScores(Object.fromEntries(CRITERIA.map((c) => [c.id, 80])));
+            setScores(Object.fromEntries(criteriaList.map((c) => [c.id, 80])));
+            setNotesMap(Object.fromEntries(criteriaList.map((c) => [c.id, ""])));
           }}>
             <i className="bi bi-plus-lg" /> 新增另一筆評鑑
           </button>
@@ -205,7 +218,7 @@ function NewEvaluationContent() {
         <div style={{ padding: "0 24px" }}>
           {/* Category groups */}
           {["品質", "交期", "價格", "服務", "技術", "財務", "合規"].map((cat) => {
-            const catCriteria = CRITERIA.filter((c) => c.category === cat);
+            const catCriteria = criteriaList.filter((c) => c.category === cat);
             if (!catCriteria.length) return null;
             return (
               <div key={cat}>
