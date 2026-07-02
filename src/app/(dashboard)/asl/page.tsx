@@ -42,6 +42,7 @@ export default function AslPage() {
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editRecord, setEditRecord] = useState<any | null>(null);
 
   const [newRecord, setNewRecord] = useState({
     supplier_name: "",
@@ -450,7 +451,11 @@ export default function AslPage() {
                           <i className="bi bi-building" /> 供應商詳情
                         </button>
                       </Link>
-                      <button className="ev-btn ev-btn-ghost" style={{ fontSize: "0.8rem" }}>
+                      <button 
+                        className="ev-btn ev-btn-ghost" 
+                        style={{ fontSize: "0.8rem" }}
+                        onClick={() => setEditRecord(r)}
+                      >
                         <i className="bi bi-pencil-square" /> 編輯記錄
                       </button>
                     </div>
@@ -476,6 +481,146 @@ export default function AslPage() {
         <span><span style={{ color: "#FB923C", fontWeight: 700 }}>●</span> 試用觀察：試用期監控，未達標則暫停使用</span>
         <span><span style={{ color: "#EF4444", fontWeight: 700 }}>●</span> 暫停使用：禁止採購，需完成重新認定</span>
       </div>
+
+      {editRecord && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+          backgroundColor: "rgba(30,58,95,0.4)", backdropFilter: "blur(4px)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+        }}>
+          <div className="ev-card" style={{
+            width: "90%", maxWidth: 540, padding: 24, 
+            boxShadow: "0 10px 30px rgba(30,58,95,0.15)",
+            maxHeight: "90vh", overflowY: "auto"
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#1E3A5F" }}>編輯 ASL 合格記錄</div>
+              <button 
+                type="button"
+                onClick={() => setEditRecord(null)}
+                style={{ background: "none", border: "none", color: "#94AEC8", fontSize: "1.2rem", cursor: "pointer" }}
+              >
+                <i className="bi bi-x-lg" />
+              </button>
+            </div>
+
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              setRecords((prev) => prev.map((r) => r.id === editRecord.id ? editRecord : r));
+              setEditRecord(null);
+            }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 18 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div>
+                    <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>供應商名稱 *</label>
+                    <input 
+                      className="ev-input" style={{ width: "100%", background: "#F5F8FC" }} readOnly
+                      value={editRecord.supplier_name}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>供應商代碼 *</label>
+                    <input 
+                      className="ev-input" style={{ width: "100%", background: "#F5F8FC" }} readOnly
+                      value={editRecord.supplier_code}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div>
+                    <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>供應商品類 *</label>
+                    <select 
+                      className="ev-select" style={{ width: "100%" }} required
+                      value={editRecord.category} onChange={(e) => setEditRecord({...editRecord, category: e.target.value})}
+                    >
+                      {["矽晶圓", "特殊氣體", "光罩製造", "封裝測試", "製程化學品", "原物料", "加工製造"].map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>審查狀態 *</label>
+                    <select 
+                      className="ev-select" style={{ width: "100%" }} required
+                      value={editRecord.status} onChange={(e) => setEditRecord({...editRecord, status: e.target.value as AslStatus})}
+                    >
+                      <option value="approved">核准合格</option>
+                      <option value="conditional">條件核准</option>
+                      <option value="probation">試用觀察</option>
+                      <option value="suspended">暫停使用</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>核准範圍 *</label>
+                  <input 
+                    className="ev-input" style={{ width: "100%" }} required
+                    value={editRecord.scope} onChange={(e) => setEditRecord({...editRecord, scope: e.target.value})}
+                    placeholder="例：300mm 矽晶圓供應"
+                  />
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1.2fr", gap: 12 }}>
+                  <div>
+                    <label style={{ fontSize: "0.76rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>核准人員 *</label>
+                    <input 
+                      className="ev-input" style={{ width: "100%" }} required
+                      value={editRecord.approved_by} onChange={(e) => setEditRecord({...editRecord, approved_by: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "0.76rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>核准日期 *</label>
+                    <input 
+                      type="date" className="ev-input" style={{ width: "100%" }} required
+                      value={editRecord.approved_date} onChange={(e) => setEditRecord({...editRecord, approved_date: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "0.76rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>有效期限 *</label>
+                    <input 
+                      type="date" className="ev-input" style={{ width: "100%" }} required
+                      value={editRecord.valid_until} onChange={(e) => setEditRecord({...editRecord, valid_until: e.target.value})}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>定期審查日 *</label>
+                  <input 
+                    type="date" className="ev-input" style={{ width: "100%" }} required
+                    value={editRecord.review_date} onChange={(e) => setEditRecord({...editRecord, review_date: e.target.value})}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>附帶條件 (條件核准時必填)</label>
+                  <textarea 
+                    className="ev-input" style={{ width: "100%", height: 60, resize: "none", padding: "8px 10px" }}
+                    value={editRecord.conditions || ""} onChange={(e) => setEditRecord({...editRecord, conditions: e.target.value})}
+                    placeholder="若狀態為條件核准，請列明具體附帶條件與期限..."
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>備註</label>
+                  <textarea 
+                    className="ev-input" style={{ width: "100%", height: 60, resize: "none", padding: "8px 10px" }}
+                    value={editRecord.notes || ""} onChange={(e) => setEditRecord({...editRecord, notes: e.target.value})}
+                    placeholder="其他需要特別註記的事項..."
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", borderTop: "1px solid #EAF1FB", paddingTop: 16 }}>
+                <button type="button" className="ev-btn ev-btn-ghost" onClick={() => setEditRecord(null)}>取消</button>
+                <button type="submit" className="ev-btn ev-btn-primary">儲存變更</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {showAddModal && (
         <div style={{
