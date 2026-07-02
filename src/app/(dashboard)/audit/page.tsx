@@ -11,9 +11,11 @@ import type { AuditEventType, AuditEventStatus } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { exportAuditEventsToExcel } from "@/lib/export";
 
-// Today = 2026-05-21 for demo
-const TODAY = "2026-07-03";
-const [TODAY_YEAR, TODAY_MONTH] = TODAY.split("-").map(Number);
+// 動態獲取當前真實日期
+const now = new Date();
+const TODAY_YEAR = now.getFullYear();
+const TODAY_MONTH = now.getMonth() + 1;
+const TODAY = `${TODAY_YEAR}-${String(TODAY_MONTH).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
 const WEEKDAY_LABELS = ["日", "一", "二", "三", "四", "五", "六"];
 const MONTH_LABELS = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
