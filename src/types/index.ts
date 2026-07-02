@@ -136,7 +136,7 @@ export const STATUS_LABELS: Record<SupplierStatus, string> = {
 export const EVAL_STATUS_LABELS: Record<EvaluationStatus, string> = {
   draft: "草稿",
   in_progress: "進行中",
-  completed: "已完成",
+  completed: "已核准",
   approved: "已核准",
   rejected: "已退回",
 };

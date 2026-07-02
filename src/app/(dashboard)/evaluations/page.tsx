@@ -9,12 +9,11 @@ import { TIER_LABELS, EVAL_STATUS_LABELS } from "@/types";
 import type { EvaluationStatus, SupplierTier } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
 
-const STATUS_TABS: { key: EvaluationStatus | "ALL"; label: string }[] = [
+const STATUS_TABS: { key: any; label: string }[] = [
   { key: "ALL", label: "全部" },
   { key: "draft", label: "草稿" },
   { key: "in_progress", label: "進行中" },
-  { key: "completed", label: "已完成" },
-  { key: "approved", label: "已核准" },
+  { key: "approved_all", label: "已核准" },
   { key: "rejected", label: "已退回" },
 ];
 
@@ -31,7 +30,7 @@ function AccessDenied() {
 export default function EvaluationsPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const [statusFilter, setStatusFilter] = useState<EvaluationStatus | "ALL">("ALL");
+  const [statusFilter, setStatusFilter] = useState<any | "ALL">("ALL");
   const [search, setSearch] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
   const [evalList, setEvalList] = useState<any[]>([]);
@@ -75,7 +74,11 @@ export default function EvaluationsPage() {
   const canReview = user && ["super_admin", "admin", "manager"].includes(user.role);
 
   const filtered = evalList.filter((e) => {
-    const matchStatus = statusFilter === "ALL" || e.status === statusFilter;
+    const matchStatus = statusFilter === "ALL" 
+      ? true 
+      : statusFilter === "approved_all"
+        ? (e.status === "completed" || e.status === "approved")
+        : e.status === statusFilter;
     const matchSearch = !search || e.supplier_name.includes(search) || e.supplier_code.includes(search);
     return matchStatus && matchSearch;
   });
@@ -84,6 +87,7 @@ export default function EvaluationsPage() {
   evalList.forEach((e) => {
     counts[e.status] = (counts[e.status] ?? 0) + 1;
   });
+  counts["approved_all"] = (counts["completed"] ?? 0) + (counts["approved"] ?? 0);
 
   return (
     <div>
@@ -102,14 +106,13 @@ export default function EvaluationsPage() {
       </div>
 
       {/* Status cards summary */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12, marginBottom: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20 }}>
         {[
-          { status: "draft" as EvaluationStatus, icon: "bi-file-earmark", color: "#6B7280", bg: "#F3F4F6" },
-          { status: "in_progress" as EvaluationStatus, icon: "bi-arrow-repeat", color: "#3B82F6", bg: "#EFF6FF" },
-          { status: "completed" as EvaluationStatus, icon: "bi-check-circle", color: "#10B981", bg: "#ECFDF5" },
-          { status: "approved" as EvaluationStatus, icon: "bi-shield-check", color: "#059669", bg: "#D1FAE5" },
-          { status: "rejected" as EvaluationStatus, icon: "bi-x-circle", color: "#EF4444", bg: "#FEF2F2" },
-        ].map(({ status, icon, color, bg }) => (
+          { status: "draft", icon: "bi-file-earmark", color: "#6B7280", bg: "#F3F4F6", label: "草稿" },
+          { status: "in_progress", icon: "bi-arrow-repeat", color: "#3B82F6", bg: "#EFF6FF", label: "進行中" },
+          { status: "approved_all", icon: "bi-shield-check", color: "#059669", bg: "#D1FAE5", label: "已核准" },
+          { status: "rejected", icon: "bi-x-circle", color: "#EF4444", bg: "#FEF2F2", label: "已退回" },
+        ].map(({ status, icon, color, bg, label }) => (
           <button
             key={status}
             onClick={() => setStatusFilter(statusFilter === status ? "ALL" : status)}
@@ -127,7 +130,7 @@ export default function EvaluationsPage() {
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
               <i className={`bi ${icon}`} style={{ color, fontSize: "0.95rem" }} />
               <span style={{ fontSize: "0.78rem", color: "#5F7A9B", fontWeight: 500 }}>
-                {EVAL_STATUS_LABELS[status]}
+                {label}
               </span>
             </div>
             <div className="score-display" style={{ fontSize: "1.4rem", fontWeight: 800, color }}>
