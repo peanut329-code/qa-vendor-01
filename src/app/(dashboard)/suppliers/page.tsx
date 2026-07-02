@@ -288,7 +288,7 @@ export default function SuppliersPage() {
           />
         </div>
         <select className="ev-select" value={catFilter} onChange={(e) => setCatFilter(e.target.value)} style={{ width: 140 }}>
-          {CATEGORIES.map((c) => <option key={c}>{c === "全部" ? "全部類別" : c}</option>)}
+          {CATEGORIES.map((c) => <option key={c} value={c}>{c === "全部" ? "全部類別" : c}</option>)}
         </select>
         <div style={{ flex: 1 }} />
         <span style={{ fontFamily: "var(--font-mono)", color: "var(--text-dim)", fontSize: "0.85rem" }}>
