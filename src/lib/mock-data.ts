@@ -411,7 +411,7 @@ export const CERTIFICATIONS: Certification[] = [
   {
     id: "cert-02", supplier_id: "s1", supplier_name: "品晶半導體材料股份有限公司", supplier_code: "SUP-001",
     cert_type: "ISO 9001:2015", cert_number: "BSI-9001-2023-1201",
-    issued_by: "BSI Group", issue_date: "2023-12-01", expiry_date: "2026-07-31",
+    issued_by: "BSI Group", issue_date: "2023-08-01", expiry_date: "2026-07-31",
     notes: "品質管理系統，距到期 71 天，需安排複審作業",
   },
   {
@@ -431,7 +431,7 @@ export const CERTIFICATIONS: Certification[] = [
   {
     id: "cert-05", supplier_id: "s2", supplier_name: "正鑫特殊氣體有限公司", supplier_code: "SUP-002",
     cert_type: "ISO 9001:2015", cert_number: "DNV-9001-2023-1215",
-    issued_by: "DNV GL", issue_date: "2023-12-15", expiry_date: "2026-12-31",
+    issued_by: "DNV GL", issue_date: "2023-12-15", expiry_date: "2026-12-14",
     notes: "品質管理系統，有效期至年底",
   },
   {
@@ -445,7 +445,7 @@ export const CERTIFICATIONS: Certification[] = [
   {
     id: "cert-07", supplier_id: "s3", supplier_name: "光揚光罩科技股份有限公司", supplier_code: "SUP-003",
     cert_type: "ISO 9001:2015", cert_number: "TUV-9001-2023-0901",
-    issued_by: "TÜV SÜD", issue_date: "2023-09-01", expiry_date: "2026-08-15",
+    issued_by: "TÜV SÜD", issue_date: "2023-08-16", expiry_date: "2026-08-15",
     notes: "品質管理系統，距到期約 86 天，建議 7 月前安排複審",
   },
   {
@@ -479,13 +479,13 @@ export const CERTIFICATIONS: Certification[] = [
   {
     id: "cert-12", supplier_id: "s5", supplier_name: "先進製程化學品股份有限公司", supplier_code: "SUP-005",
     cert_type: "ISO 9001:2015", cert_number: "SGS-9001-2022-0930",
-    issued_by: "SGS Taiwan", issue_date: "2022-10-01", expiry_date: "2027-09-30",
+    issued_by: "SGS Taiwan", issue_date: "2024-10-01", expiry_date: "2027-09-30",
     notes: "品質管理系統，配合改善計畫已完成更新",
   },
   {
     id: "cert-13", supplier_id: "s5", supplier_name: "先進製程化學品股份有限公司", supplier_code: "SUP-005",
     cert_type: "RoHS 合規聲明", cert_number: "ROHS-2023-SUP005-0615",
-    issued_by: "第三方驗證機構", issue_date: "2023-06-15", expiry_date: "2026-06-10",
+    issued_by: "第三方驗證機構", issue_date: "2023-06-15", expiry_date: "2026-06-14",
     notes: "限制有害物質合規聲明，距到期約 20 天，需立即安排更新",
   },
   {
