@@ -365,8 +365,8 @@ export default function CertificationsPage() {
           <div className="card-header-title"><i className="bi bi-patch-check" /> 認證清單</div>
           <div className="card-header-count">共 {filtered.length} 筆</div>
         </div>
-        <div className="card-body p-0">
-          <table className="tbl">
+        <div className="card-body p-0" style={{ overflowX: "auto" }}>
+          <table className="tbl" style={{ width: "100%", minWidth: 1100 }}>
             <thead>
               <tr>
                 <th>供應商名稱</th>
