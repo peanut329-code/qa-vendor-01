@@ -9,6 +9,7 @@ import {
 import { EVALUATIONS, EVALUATION_SCORES } from "@/lib/mock-data";
 import { getTierColor, getEvalStatusColor, formatDate, scoreColor } from "@/lib/utils";
 import { TIER_LABELS, EVAL_STATUS_LABELS } from "@/types";
+import type { EvaluationStatus, SupplierTier } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { printEvaluationReport, exportEvaluationToExcel } from "@/lib/export";
 
@@ -19,30 +20,125 @@ export default function EvaluationDetailPage({ params }: { params: Promise<{ id:
   const [status, setStatus] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
 
-  const ev = EVALUATIONS.find((e) => e.id === id);
-  const scores = EVALUATION_SCORES[id] ?? [];
+  const [evaluation, setEvaluation] = useState<any>(null);
+  const [localScores, setLocalScores] = useState<any[]>([]);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && ev) {
-      const saved = localStorage.getItem(`eval-status-${id}`);
-      if (saved) {
-        setStatus(saved);
-        ev.status = saved as any;
+    const baseEv = EVALUATIONS.find((e) => e.id === id);
+    if (!baseEv) return;
+
+    if (typeof window !== "undefined") {
+      const savedStatus = localStorage.getItem(`eval-status-${id}`);
+      const savedDetail = localStorage.getItem(`eval-detail-${id}`);
+      const savedScores = localStorage.getItem(`eval-scores-${id}`);
+
+      let currentEv = { ...baseEv };
+      if (savedStatus) {
+        currentEv.status = savedStatus as any;
       }
+      if (savedDetail) {
+        try {
+          const parsed = JSON.parse(savedDetail);
+          currentEv = { ...currentEv, ...parsed };
+        } catch (e) {}
+      }
+
+      setEvaluation(currentEv);
+      setStatus(currentEv.status);
+
+      if (savedScores) {
+        try {
+          setLocalScores(JSON.parse(savedScores));
+        } catch (e) {
+          setLocalScores(EVALUATION_SCORES[id] ?? []);
+        }
+      } else {
+        setLocalScores(EVALUATION_SCORES[id] ?? []);
+      }
+    } else {
+      setEvaluation(baseEv);
+      setStatus(baseEv.status);
+      setLocalScores(EVALUATION_SCORES[id] ?? []);
     }
-  }, [id, ev]);
+  }, [id]);
 
   function handleStatusChange(newStatus: string) {
     setStatus(newStatus);
-    if (typeof window !== "undefined") {
-      localStorage.setItem(`eval-status-${id}`, newStatus);
-    }
-    if (ev) {
-      ev.status = newStatus as any;
+    if (evaluation) {
+      const updated = { ...evaluation, status: newStatus };
+      setEvaluation(updated);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(`eval-status-${id}`, newStatus);
+        localStorage.setItem(`eval-detail-${id}`, JSON.stringify(updated));
+      }
+      // 同步記憶體
+      const globalEv = EVALUATIONS.find(e => e.id === id);
+      if (globalEv) {
+        globalEv.status = newStatus as any;
+      }
     }
   }
 
-  if (!ev) {
+  function handleAutoGenerateScores() {
+    if (!evaluation) return;
+
+    const scoreItems = [
+      { name: "品質管理系統 (QMS) 完整性與運作成效", cat: "品質", w: 25, min: 80, max: 96 },
+      { name: "進料檢驗與製程管制能力", cat: "品質", w: 25, min: 78, max: 94 },
+      { name: "交期達成率與供貨彈性", cat: "交期", w: 20, min: 80, max: 98 },
+      { name: "異常事件處理時效與 SCAR 回覆品質", cat: "服務", w: 15, min: 72, max: 90 },
+      { name: "技術與研發支援能力", cat: "技術", w: 15, min: 75, max: 95 },
+    ];
+
+    const generatedScores = scoreItems.map((item, idx) => {
+      const score = Math.floor(item.min + Math.random() * (item.max - item.min));
+      return {
+        criteria_id: `crit-${idx}`,
+        criteria_name: item.name,
+        category: item.cat,
+        weight: item.w,
+        score: score,
+        weighted_score: +(score * item.w / 100).toFixed(2),
+        notes: `符合評鑑項目要求，實地審查分數為 ${score}。`,
+      };
+    });
+
+    const totalScore = +generatedScores.reduce((sum, s) => sum + s.weighted_score, 0).toFixed(2);
+    let tier: "A" | "B" | "C" | "D" = "B";
+    if (totalScore >= 90) tier = "A";
+    else if (totalScore >= 80) tier = "B";
+    else if (totalScore >= 70) tier = "C";
+    else tier = "D";
+
+    const updatedEv = {
+      ...evaluation,
+      status: "completed" as const,
+      total_score: totalScore,
+      tier: tier,
+      notes: `系統自動生成報告：該供應商整體品質控制穩定，QMS 流程符合本公司要求。各分項評估中，以交期配合度最為突出（得分 ${generatedScores[2].score}），惟在服務異常回覆效率上（得分 ${generatedScores[3].score}）仍有微幅改善空間。`,
+      updated_at: new Date().toISOString(),
+    };
+
+    setEvaluation(updatedEv);
+    setStatus("completed");
+    setLocalScores(generatedScores);
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`eval-status-${id}`, "completed");
+      localStorage.setItem(`eval-detail-${id}`, JSON.stringify(updatedEv));
+      localStorage.setItem(`eval-scores-${id}`, JSON.stringify(generatedScores));
+    }
+
+    const globalEv = EVALUATIONS.find(e => e.id === id);
+    if (globalEv) {
+      globalEv.status = "completed";
+      globalEv.total_score = totalScore;
+      globalEv.tier = tier;
+      globalEv.updated_at = updatedEv.updated_at;
+    }
+  }
+
+  if (!evaluation) {
     return (
       <div style={{ textAlign: "center", padding: "80px 20px" }}>
         <i className="bi bi-file-earmark-x" style={{ fontSize: "3rem", color: "#C5D8F0", display: "block", marginBottom: 16 }} />
@@ -52,12 +148,12 @@ export default function EvaluationDetailPage({ params }: { params: Promise<{ id:
     );
   }
 
-  const currentStatus = (status ?? ev.status) as typeof ev.status;
+  const currentStatus = (status ?? evaluation.status) as EvaluationStatus;
   const statusC = getEvalStatusColor(currentStatus);
-  const tierC = ev.tier ? getTierColor(ev.tier) : null;
+  const tierC = evaluation.tier ? getTierColor(evaluation.tier) : null;
   const canReview = user && ["super_admin", "admin", "manager"].includes(user.role);
 
-  const chartData = scores.map((s) => ({
+  const chartData = localScores.map((s) => ({
     name: s.criteria_name,
     score: s.score,
     weighted: +s.weighted_score.toFixed(2),
@@ -66,7 +162,7 @@ export default function EvaluationDetailPage({ params }: { params: Promise<{ id:
 
   async function handleExcelExport() {
     setExporting(true);
-    await exportEvaluationToExcel(ev!, scores);
+    await exportEvaluationToExcel(evaluation!, localScores);
     setExporting(false);
   }
 
@@ -76,23 +172,31 @@ export default function EvaluationDetailPage({ params }: { params: Promise<{ id:
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, fontSize: "0.82rem", color: "#94AEC8" }}>
         <Link href="/evaluations" style={{ color: "#94AEC8", textDecoration: "none" }}>評鑑作業</Link>
         <i className="bi bi-chevron-right" style={{ fontSize: "0.7rem" }} />
-        <span style={{ color: "#5B8FD9", fontWeight: 600 }}>{ev.supplier_code} — {ev.period}</span>
+        <span style={{ color: "#5B8FD9", fontWeight: 600 }}>{evaluation.supplier_code} — {evaluation.period}</span>
       </div>
 
       <div className="page-header">
         <div>
-          <div className="page-title">{ev.supplier_name}</div>
+          <div className="page-title">{evaluation.supplier_name}</div>
           <div className="page-subtitle">
-            {ev.supplier_code} ／ {ev.period} ／ 評鑑人：{ev.evaluator_name}
+            {evaluation.supplier_code} ／ {evaluation.period} ／ 評鑑人：{evaluation.evaluator_name}
           </div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="ev-btn ev-btn-ghost" onClick={() => printEvaluationReport(ev, scores)}>
+          <button className="ev-btn ev-btn-ghost" onClick={() => printEvaluationReport(evaluation, localScores)}>
             <i className="bi bi-printer" /> 列印 PDF
           </button>
           <button className="ev-btn ev-btn-secondary" onClick={handleExcelExport} disabled={exporting}>
             <i className="bi bi-file-earmark-excel" /> {exporting ? "匯出中..." : "Excel"}
           </button>
+          
+          {/* 自動打分完成按鈕 */}
+          {canReview && ["draft", "in_progress"].includes(currentStatus) && (
+            <button className="ev-btn ev-btn-primary" onClick={handleAutoGenerateScores}>
+              <i className="bi bi-cpu" /> 自動評分並完成
+            </button>
+          )}
+
           {canReview && currentStatus === "completed" && (
             <>
               <button
@@ -115,19 +219,19 @@ export default function EvaluationDetailPage({ params }: { params: Promise<{ id:
       </div>
 
       {/* Status change notification */}
-      {status && status !== ev.status && (
+      {status && status !== evaluation.status && (
         <div
           style={{
-            background: status === "approved" ? "#D1FAE5" : "#FEE2E2",
-            border: `1px solid ${status === "approved" ? "#A7F3D0" : "#FECACA"}`,
+            background: status === "approved" ? "#D1FAE5" : (status === "rejected" ? "#FEE2E2" : "#EFF6FF"),
+            border: `1px solid ${status === "approved" ? "#A7F3D0" : (status === "rejected" ? "#FECACA" : "#BFDBFE")}`,
             borderRadius: 8, padding: "10px 16px", marginBottom: 16,
-            color: status === "approved" ? "#065F46" : "#991B1B",
+            color: status === "approved" ? "#065F46" : (status === "rejected" ? "#991B1B" : "#1E40AF"),
             fontSize: "0.875rem", fontWeight: 600,
             display: "flex", alignItems: "center", gap: 8,
           }}
         >
-          <i className={`bi ${status === "approved" ? "bi-check-circle-fill" : "bi-x-circle-fill"}`} />
-          評鑑已{status === "approved" ? "核准" : "退回"}
+          <i className={`bi ${status === "approved" ? "bi-check-circle-fill" : (status === "rejected" ? "bi-x-circle-fill" : "bi-info-circle-fill")}`} />
+          評鑑已{status === "approved" ? "核准" : (status === "rejected" ? "退回" : "完成")}
         </div>
       )}
 
@@ -142,27 +246,27 @@ export default function EvaluationDetailPage({ params }: { params: Promise<{ id:
         <div className="ev-card" style={{ padding: "16px 20px" }}>
           <div style={{ fontSize: "0.75rem", color: "#5F7A9B", marginBottom: 4 }}>加權總分</div>
           <div style={{ fontSize: "2rem", fontWeight: 800, color: "#1E3A5F" }}>
-            {ev.total_score?.toFixed(1) ?? "—"}
+            {evaluation.total_score?.toFixed(1) ?? "—"}
           </div>
         </div>
         <div className="ev-card" style={{ padding: "16px 20px" }}>
           <div style={{ fontSize: "0.75rem", color: "#5F7A9B", marginBottom: 8 }}>供應商等級</div>
-          {tierC && ev.tier ? (
+          {tierC && evaluation.tier ? (
             <span className={`ev-badge ${tierC.bg} ${tierC.text}`} style={{ fontSize: "0.88rem" }}>
               <span className={`ev-badge-dot ${tierC.dot}`} />
-              {TIER_LABELS[ev.tier]}
+              {TIER_LABELS[evaluation.tier as SupplierTier]}
             </span>
           ) : <span style={{ color: "#C5D8F0" }}>—</span>}
         </div>
         <div className="ev-card" style={{ padding: "16px 20px" }}>
           <div style={{ fontSize: "0.75rem", color: "#5F7A9B", marginBottom: 4 }}>更新時間</div>
-          <div style={{ fontSize: "0.875rem", fontWeight: 600, color: "#1E3A5F" }}>{formatDate(ev.updated_at)}</div>
-          <div style={{ fontSize: "0.72rem", color: "#94AEC8", marginTop: 2 }}>建立：{formatDate(ev.created_at)}</div>
+          <div style={{ fontSize: "0.875rem", fontWeight: 600, color: "#1E3A5F" }}>{formatDate(evaluation.updated_at)}</div>
+          <div style={{ fontSize: "0.72rem", color: "#94AEC8", marginTop: 2 }}>建立：{formatDate(evaluation.created_at)}</div>
         </div>
       </div>
 
       {/* Chart + Score table */}
-      {scores.length > 0 ? (
+      {localScores.length > 0 ? (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, marginBottom: 18 }}>
           {/* Bar chart */}
           <div className="ev-card" style={{ padding: "20px 24px" }}>
@@ -203,7 +307,7 @@ export default function EvaluationDetailPage({ params }: { params: Promise<{ id:
                   </tr>
                 </thead>
                 <tbody>
-                  {scores.map((s) => (
+                  {localScores.map((s) => (
                     <tr key={s.criteria_id}>
                       <td>
                         <div style={{ fontWeight: 600, color: "#1E3A5F" }}>{s.criteria_name}</div>
@@ -230,7 +334,7 @@ export default function EvaluationDetailPage({ params }: { params: Promise<{ id:
                   <tr style={{ background: "#EDF3FA", fontWeight: 700 }}>
                     <td colSpan={4} style={{ textAlign: "right", color: "#5F7A9B" }}>合計加權分</td>
                     <td style={{ textAlign: "center", color: "#1E3A5F", fontSize: "1rem" }}>
-                      {scores.reduce((a, s) => a + s.weighted_score, 0).toFixed(2)}
+                      {localScores.reduce((a, s) => a + s.weighted_score, 0).toFixed(2)}
                     </td>
                   </tr>
                 </tbody>
@@ -246,21 +350,21 @@ export default function EvaluationDetailPage({ params }: { params: Promise<{ id:
       )}
 
       {/* Notes */}
-      {ev.notes && (
+      {evaluation.notes && (
         <div className="ev-card" style={{ padding: "18px 22px", marginBottom: 18 }}>
           <div style={{ fontWeight: 700, color: "#1E3A5F", marginBottom: 10, fontSize: "0.9rem" }}>
             <i className="bi bi-chat-square-text-fill" style={{ color: "#5B8FD9", marginRight: 8 }} />
             評鑑備註
           </div>
           <div style={{ color: "#5F7A9B", lineHeight: 1.8, fontSize: "0.875rem", background: "#F7FAFF", borderRadius: 8, padding: "12px 16px", border: "1px solid #EAF1FB" }}>
-            {ev.notes}
+            {evaluation.notes}
           </div>
         </div>
       )}
 
       {/* Footer action */}
       <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-        <button className="ev-btn ev-btn-ghost" onClick={() => router.push(`/suppliers/${ev.supplier_id}`)}>
+        <button className="ev-btn ev-btn-ghost" onClick={() => router.push(`/suppliers/${evaluation.supplier_id}`)}>
           <i className="bi bi-building" /> 查看供應商
         </button>
         <button className="ev-btn ev-btn-secondary" onClick={() => router.push("/evaluations")}>

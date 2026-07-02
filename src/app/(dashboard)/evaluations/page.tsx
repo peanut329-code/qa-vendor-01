@@ -39,10 +39,22 @@ export default function EvaluationsPage() {
     if (typeof window !== "undefined") {
       let updated = false;
       EVALUATIONS.forEach((e) => {
-        const saved = localStorage.getItem(`eval-status-${e.id}`);
-        if (saved && e.status !== saved) {
-          e.status = saved as any;
+        const savedStatus = localStorage.getItem(`eval-status-${e.id}`);
+        const savedDetail = localStorage.getItem(`eval-detail-${e.id}`);
+        if (savedStatus && e.status !== savedStatus) {
+          e.status = savedStatus as any;
           updated = true;
+        }
+        if (savedDetail) {
+          try {
+            const parsed = JSON.parse(savedDetail);
+            if (parsed.total_score !== e.total_score || parsed.tier !== e.tier) {
+              e.total_score = parsed.total_score;
+              e.tier = parsed.tier;
+              e.updated_at = parsed.updated_at;
+              updated = true;
+            }
+          } catch (err) {}
         }
       });
       if (updated) {

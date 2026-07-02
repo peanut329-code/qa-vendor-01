@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { SCARS, CERTIFICATIONS } from "@/lib/mock-data";
 import { ROLE_LABELS } from "@/types";
 import type { UserRole } from "@/types";
 
@@ -40,7 +41,15 @@ export default function Sidebar() {
     return pathname === href || pathname.startsWith(href + "/");
   }
 
-  const visibleNav      = NAV_ITEMS.filter((item) => role && item.allowedRoles.includes(role));
+  const visibleNav = NAV_ITEMS.filter((item) => role && item.allowedRoles.includes(role)).map((item) => {
+    if (item.href === "/scar") {
+      return { ...item, badge: SCARS.length };
+    }
+    if (item.href === "/certifications") {
+      return { ...item, badge: CERTIFICATIONS.length };
+    }
+    return item;
+  });
   const visibleAdminNav = ADMIN_NAV.filter((item) => role && item.allowedRoles.includes(role));
 
   const initials = user?.full_name
