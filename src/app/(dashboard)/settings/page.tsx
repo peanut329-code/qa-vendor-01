@@ -210,9 +210,23 @@ export default function SettingsPage() {
                   }}
                 >
                   <span style={{ fontWeight: 700, color: "#1E3A5F", fontSize: "0.9rem" }}>評鑑指標管理</span>
-                  <button className="ev-btn ev-btn-secondary" onClick={() => setShowAddModal(true)} style={{ fontSize: "0.8rem", padding: "6px 14px" }}>
-                    <i className="bi bi-plus" /> 新增指標
-                  </button>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button 
+                      className="ev-btn ev-btn-ghost" 
+                      onClick={() => {
+                        if (confirm("是否將指標重置為系統預設（品質合格率30%、交貨準時率25%、價格競爭力20%、品質管理系統15%、環保合規性10%，共 100%）？")) {
+                          setCriteriaList(CRITERIA);
+                          localStorage.setItem("settings-criteria", JSON.stringify(CRITERIA));
+                        }
+                      }}
+                      style={{ fontSize: "0.8rem", padding: "6px 14px" }}
+                    >
+                      <i className="bi bi-arrow-counterclockwise" /> 重置預設 (100%)
+                    </button>
+                    <button className="ev-btn ev-btn-secondary" onClick={() => setShowAddModal(true)} style={{ fontSize: "0.8rem", padding: "6px 14px" }}>
+                      <i className="bi bi-plus" /> 新增指標
+                    </button>
+                  </div>
                 </div>
                 <table className="ev-table">
                   <thead>

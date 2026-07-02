@@ -219,14 +219,11 @@ export const EVALUATIONS: Evaluation[] = [
 // 評鑑指標
 // ================================================================
 export const CRITERIA: EvaluationCriteria[] = [
-  { id: "c1", name: "品質合格率",   category: "品質", weight: 20, max_score: 100, description: "製程材料合格率與批退率",                 is_active: true, sort_order: 1 },
-  { id: "c2", name: "交貨準時率",   category: "交期", weight: 20, max_score: 100, description: "依約定日期準時交貨比例（含緊急訂單）",   is_active: true, sort_order: 2 },
-  { id: "c3", name: "價格競爭力",   category: "價格", weight: 15, max_score: 100, description: "市場報價合理性與年度降價承諾履行率",       is_active: true, sort_order: 3 },
-  { id: "c4", name: "服務回應速度", category: "服務", weight: 10, max_score: 100, description: "技術諮詢、緊急支援、客訴處理效率",         is_active: true, sort_order: 4 },
-  { id: "c5", name: "技術能力",     category: "技術", weight: 10, max_score: 100, description: "製程改善能力、技術路線圖完整性",           is_active: true, sort_order: 5 },
-  { id: "c6", name: "品質管理系統", category: "品質", weight: 10, max_score: 100, description: "IATF 16949 / ISO 9001 認證、SPC 管制",   is_active: true, sort_order: 6 },
-  { id: "c7", name: "財務穩定性",   category: "財務", weight: 10, max_score: 100, description: "資本額、信用評等、BCP 計畫完整性",         is_active: true, sort_order: 7 },
-  { id: "c8", name: "環保合規性",   category: "合規", weight:  5, max_score: 100, description: "RoHS / REACH / ESG 合規，廢氣廢水達標",  is_active: true, sort_order: 8 },
+  { id: "c1", name: "品質合格率",   category: "品質", weight: 30, max_score: 100, description: "製程材料合格率與批退率",                 is_active: true, sort_order: 1 },
+  { id: "c2", name: "交貨準時率",   category: "交期", weight: 25, max_score: 100, description: "依約定日期準時交貨比例（含緊急訂單）",   is_active: true, sort_order: 2 },
+  { id: "c3", name: "價格競爭力",   category: "價格", weight: 20, max_score: 100, description: "市場報價合理性與年度降價承諾履行率",       is_active: true, sort_order: 3 },
+  { id: "c6", name: "品質管理系統", category: "品質", weight: 15, max_score: 100, description: "IATF 16949 / ISO 9001 認證、SPC 管制",   is_active: true, sort_order: 4 },
+  { id: "c8", name: "環保合規性",   category: "合規", weight: 10, max_score: 100, description: "RoHS / REACH / ESG 合規，廢氣廢水達標",  is_active: true, sort_order: 5 },
 ];
 
 // ================================================================
