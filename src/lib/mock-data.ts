@@ -317,7 +317,7 @@ export const SCARS: Scar[] = [
     verified_date: null,
     status: "in_progress",
     created_by: "u6",
-    created_at: "2024-11-05T10:00:00Z",
+    created_at: "2026-01-18T10:00:00Z",
     updated_at: "2025-01-15T14:00:00Z",
   },
   {
