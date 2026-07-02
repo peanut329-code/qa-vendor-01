@@ -10,7 +10,7 @@ import type { SupplierTier } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
 
 const CATEGORIES = ["全部", "矽晶圓", "特殊氣體", "光罩製造", "封裝測試", "製程化學品",
-  "機構零件", "電子元件", "塑膠原料", "原物料", "加工製造", "包裝"];
+  "機構零件", "電子元件", "塑膠原料", "原物料", "加工製造", "包裝", "口鼻罩", "頸部"];
 
 const TIER_COLORS: Record<string, string> = {
   A: "#10B981", B: "#5B8FD9", C: "#F59E0B", D: "#EF4444",

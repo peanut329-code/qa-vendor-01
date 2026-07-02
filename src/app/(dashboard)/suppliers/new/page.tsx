@@ -12,6 +12,7 @@ const CATEGORIES = [
   "矽晶圓", "特殊氣體", "光罩製造", "封裝測試", "製程化學品",
   "機械零件", "電子元件", "化工原料", "包裝材料", "物流服務",
   "橡膠製品", "鋼鐵材料", "扣件緊固", "印刷包裝", "設備維修",
+  "口鼻罩", "頸部",
 ];
 
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {

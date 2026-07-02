@@ -37,9 +37,53 @@ const STATUS_COUNT_COLOR: Record<AslStatus, { count: string; bg: string; icon: s
 export default function AslPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const [records, setRecords] = useState(ASL_RECORDS);
   const [statusFilter, setStatusFilter] = useState<AslStatus | "ALL">("ALL");
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  const [newRecord, setNewRecord] = useState({
+    supplier_name: "",
+    supplier_code: "",
+    category: "矽晶圓",
+    scope: "",
+    status: "approved" as AslStatus,
+    approved_by: "",
+    approved_date: "2026-05-22",
+    valid_until: "2029-05-21",
+    review_date: "2027-05-22",
+    conditions: "",
+    notes: "",
+  });
+
+  function handleAddRecord(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newRecord.supplier_name || !newRecord.supplier_code) {
+      alert("請輸入供應商名稱與代碼");
+      return;
+    }
+    const recordToAdd = {
+      id: `asl-${Date.now()}`,
+      supplier_id: `s-${Date.now()}`,
+      ...newRecord
+    };
+    setRecords((prev) => [recordToAdd, ...prev]);
+    setShowAddModal(false);
+    setNewRecord({
+      supplier_name: "",
+      supplier_code: "",
+      category: "矽晶圓",
+      scope: "",
+      status: "approved",
+      approved_by: "",
+      approved_date: "2026-05-22",
+      valid_until: "2029-05-21",
+      review_date: "2027-05-22",
+      conditions: "",
+      notes: "",
+    });
+  }
 
   if (!user || !["super_admin", "admin", "manager", "viewer"].includes(user.role)) {
     return <AccessDenied />;
@@ -49,12 +93,12 @@ export default function AslPage() {
 
   const counts = useMemo(() => {
     const obj = { approved: 0, conditional: 0, probation: 0, suspended: 0 };
-    ASL_RECORDS.forEach((r) => { obj[r.status]++; });
+    records.forEach((r) => { obj[r.status]++; });
     return obj;
-  }, []);
+  }, [records]);
 
   const filtered = useMemo(() => {
-    return ASL_RECORDS.filter((r) => {
+    return records.filter((r) => {
       const matchStatus = statusFilter === "ALL" || r.status === statusFilter;
       const matchSearch = !search ||
         r.supplier_name.includes(search) ||
@@ -63,7 +107,7 @@ export default function AslPage() {
         r.scope.includes(search);
       return matchStatus && matchSearch;
     });
-  }, [statusFilter, search]);
+  }, [records, statusFilter, search]);
 
   const today = new Date("2026-05-22");
 
@@ -97,7 +141,7 @@ export default function AslPage() {
             <button className="ev-btn ev-btn-ghost" onClick={() => exportAslToExcel(filtered)}>
               <i className="bi bi-file-earmark-excel" /> Excel 匯出
             </button>
-            <button className="ev-btn ev-btn-primary">
+            <button className="ev-btn ev-btn-primary" onClick={() => setShowAddModal(true)}>
               <i className="bi bi-plus-lg" /> 新增記錄
             </button>
           </div>
@@ -159,7 +203,7 @@ export default function AslPage() {
               <i className="bi bi-list-check" style={{ color: "#5B8FD9", fontSize: "0.85rem" }} />
             </div>
           </div>
-          <div style={{ fontSize: "1.8rem", fontWeight: 800, color: "#5B8FD9" }}>{ASL_RECORDS.length}</div>
+          <div style={{ fontSize: "1.8rem", fontWeight: 800, color: "#5B8FD9" }}>{records.length}</div>
         </button>
 
         {(["approved", "conditional", "probation", "suspended"] as AslStatus[]).map((s) => {
@@ -432,6 +476,126 @@ export default function AslPage() {
         <span><span style={{ color: "#FB923C", fontWeight: 700 }}>●</span> 試用觀察：試用期監控，未達標則暫停使用</span>
         <span><span style={{ color: "#EF4444", fontWeight: 700 }}>●</span> 暫停使用：禁止採購，需完成重新認定</span>
       </div>
+
+      {showAddModal && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+          backgroundColor: "rgba(30,58,95,0.4)", backdropFilter: "blur(4px)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+        }}>
+          <div className="ev-card" style={{
+            width: "100%", maxWidth: 640, maxHeight: "90vh", overflowY: "auto",
+            padding: 24, boxShadow: "0 10px 30px rgba(30,58,95,0.15)",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#1E3A5F" }}>新增合格供應商記錄</div>
+              <button 
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                style={{ background: "none", border: "none", color: "#94AEC8", fontSize: "1.2rem", cursor: "pointer" }}
+              >
+                <i className="bi bi-x-lg" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddRecord}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 18 }}>
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>供應商名稱 *</label>
+                  <input 
+                    className="ev-input" style={{ width: "100%" }} required
+                    value={newRecord.supplier_name} onChange={(e) => setNewRecord({...newRecord, supplier_name: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>供應商代碼 *</label>
+                  <input 
+                    className="ev-input" style={{ width: "100%" }} placeholder="例：SUP-006" required
+                    value={newRecord.supplier_code} onChange={(e) => setNewRecord({...newRecord, supplier_code: e.target.value.toUpperCase()})}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>分類 *</label>
+                  <select 
+                    className="ev-select" style={{ width: "100%" }}
+                    value={newRecord.category} onChange={(e) => setNewRecord({...newRecord, category: e.target.value})}
+                  >
+                    {["矽晶圓", "特殊氣體", "光罩製造", "封裝測試", "製程化學品", "機械零件", "電子元件", "化工原料", "包裝材料", "物流服務", "口鼻罩", "頸部"].map((c) => (
+                      <option key={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>核准狀態 *</label>
+                  <select 
+                    className="ev-select" style={{ width: "100%" }}
+                    value={newRecord.status} onChange={(e) => setNewRecord({...newRecord, status: e.target.value as AslStatus})}
+                  >
+                    <option value="approved">核准合格</option>
+                    <option value="conditional">條件核准</option>
+                    <option value="probation">試用觀察</option>
+                    <option value="suspended">暫停使用</option>
+                  </select>
+                </div>
+                <div style={{ gridColumn: "span 2" }}>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>供應範疇 *</label>
+                  <input 
+                    className="ev-input" style={{ width: "100%" }} placeholder="例：產品品項與規格說明" required
+                    value={newRecord.scope} onChange={(e) => setNewRecord({...newRecord, scope: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>核准人 *</label>
+                  <input 
+                    className="ev-input" style={{ width: "100%" }} required
+                    value={newRecord.approved_by} onChange={(e) => setNewRecord({...newRecord, approved_by: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>核准日期 *</label>
+                  <input 
+                    type="date" className="ev-input" style={{ width: "100%" }} required
+                    value={newRecord.approved_date} onChange={(e) => setNewRecord({...newRecord, approved_date: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>複評日期 *</label>
+                  <input 
+                    type="date" className="ev-input" style={{ width: "100%" }} required
+                    value={newRecord.review_date} onChange={(e) => setNewRecord({...newRecord, review_date: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>有效期限 *</label>
+                  <input 
+                    type="date" className="ev-input" style={{ width: "100%" }} required
+                    value={newRecord.valid_until} onChange={(e) => setNewRecord({...newRecord, valid_until: e.target.value})}
+                  />
+                </div>
+                <div style={{ gridColumn: "span 2" }}>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>附帶條件</label>
+                  <input 
+                    className="ev-input" style={{ width: "100%" }} placeholder="例：無則免填"
+                    value={newRecord.conditions} onChange={(e) => setNewRecord({...newRecord, conditions: e.target.value})}
+                  />
+                </div>
+                <div style={{ gridColumn: "span 2" }}>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>備註</label>
+                  <textarea 
+                    className="ev-input" style={{ width: "100%", height: 60, resize: "none", fontFamily: "inherit" }}
+                    value={newRecord.notes} onChange={(e) => setNewRecord({...newRecord, notes: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", borderTop: "1px solid #EAF1FB", paddingTop: 16 }}>
+                <button type="button" className="ev-btn ev-btn-ghost" onClick={() => setShowAddModal(false)}>取消</button>
+                <button type="submit" className="ev-btn ev-btn-primary">確認新增</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
