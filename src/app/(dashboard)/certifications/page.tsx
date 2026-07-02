@@ -33,6 +33,103 @@ export default function CertificationsPage() {
   const [certList, setCertList] = useState<any[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [suppliersList, setSuppliersList] = useState<any[]>([]);
+  const [selectedCert, setSelectedCert] = useState<any | null>(null);
+  const [isRenewing, setIsRenewing] = useState(false);
+  const [renewForm, setRenewForm] = useState({
+    cert_number: "",
+    issued_by: "",
+    issue_date: "",
+    expiry_date: "",
+    updated_at: "",
+    notes: ""
+  });
+
+  const getDemoHistory = (cert: any) => {
+    if (!cert.issue_date || !cert.cert_number) return [];
+    try {
+      const curIssue = new Date(cert.issue_date);
+      if (isNaN(curIssue.getTime())) return [];
+      const prevIssue = new Date(curIssue.getFullYear() - 3, curIssue.getMonth(), curIssue.getDate()).toISOString().slice(0, 10);
+      const prevExpiryDate = new Date(curIssue.getTime() - 24 * 60 * 60 * 1000);
+      const prevExpiry = isNaN(prevExpiryDate.getTime()) ? "" : prevExpiryDate.toISOString().slice(0, 10);
+      
+      const parts = cert.cert_number.split("-");
+      let prevNumber = cert.cert_number;
+      if (parts.length > 2) {
+        prevNumber = parts.map((p: string) => p.match(/^\d{4}$/) ? String(Number(p) - 3) : p).join("-");
+      }
+      return [
+        {
+          cert_number: prevNumber,
+          issued_by: cert.issued_by,
+          issue_date: prevIssue,
+          expiry_date: prevExpiry,
+          updated_at: prevIssue,
+          notes: "前次換證紀錄，已由新證證號替代結案",
+        }
+      ];
+    } catch (e) {
+      return [];
+    }
+  };
+
+  function handleRenewSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedCert) return;
+
+    const currentBackup = {
+      cert_number: selectedCert.cert_number,
+      issued_by: selectedCert.issued_by,
+      issue_date: selectedCert.issue_date,
+      expiry_date: selectedCert.expiry_date,
+      updated_at: selectedCert.updated_at || selectedCert.issue_date,
+      notes: selectedCert.notes || "舊證書存檔"
+    };
+
+    const pastHistory = selectedCert.history || getDemoHistory(selectedCert);
+    const newHistory = [currentBackup, ...pastHistory];
+
+    const updatedCert = {
+      ...selectedCert,
+      cert_number: renewForm.cert_number,
+      issued_by: renewForm.issued_by,
+      issue_date: renewForm.issue_date,
+      expiry_date: renewForm.expiry_date,
+      updated_at: renewForm.updated_at,
+      notes: renewForm.notes,
+      history: newHistory
+    };
+
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("certifications-custom");
+      let customCerts: any[] = [];
+      if (saved) {
+        try { customCerts = JSON.parse(saved); } catch (e) {}
+      }
+
+      const isCustom = customCerts.some(c => c.id === selectedCert.id);
+      let updatedCustom: any[];
+      if (isCustom) {
+        updatedCustom = customCerts.map(c => c.id === selectedCert.id ? updatedCert : c);
+      } else {
+        updatedCustom = [...customCerts, updatedCert];
+      }
+      localStorage.setItem("certifications-custom", JSON.stringify(updatedCustom));
+      
+      setCertList(prev => {
+        const hasId = prev.some(c => c.id === selectedCert.id);
+        if (hasId) {
+          return prev.map(c => c.id === selectedCert.id ? updatedCert : c);
+        } else {
+          return [...prev, updatedCert];
+        }
+      });
+    }
+
+    setSelectedCert(updatedCert);
+    setIsRenewing(false);
+    alert("換證更新成功！新證書已生效，舊證書已移入換證歷史紀錄以供追溯。");
+  }
 
   const [newCert, setNewCert] = useState({
     supplier_id: "",
@@ -281,6 +378,7 @@ export default function CertificationsPage() {
                 <th style={{ width: 100, textAlign: "center" }}>剩餘天數</th>
                 <th style={{ width: 90 }}>狀態</th>
                 <th>備註</th>
+                <th style={{ width: 80, textAlign: "center" }}>操作</th>
               </tr>
             </thead>
             <tbody>
@@ -354,6 +452,15 @@ export default function CertificationsPage() {
                         {cert.notes}
                       </div>
                     </td>
+                    <td style={{ textAlign: "center" }}>
+                      <button 
+                        className="ev-btn ev-btn-ghost" 
+                        style={{ padding: "4px 10px", fontSize: "0.78rem" }}
+                        onClick={() => setSelectedCert(cert)}
+                      >
+                        <i className="bi bi-eye" /> 查看
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
@@ -376,6 +483,216 @@ export default function CertificationsPage() {
         <span><span style={{ color: "#EF4444", fontWeight: 700 }}>●</span> 緊急（≤30 天）</span>
         <span><span style={{ color: "#DC2626", fontWeight: 700 }}>●</span> 已過期</span>
       </div>
+
+      {selectedCert && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+          backgroundColor: "rgba(30,58,95,0.4)", backdropFilter: "blur(4px)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+        }}>
+          <div className="ev-card" style={{
+            width: "90%", maxWidth: 640, padding: 24, 
+            boxShadow: "0 10px 30px rgba(30,58,95,0.15)",
+            maxHeight: "90vh", overflowY: "auto"
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, borderBottom: "1px solid #EAF1FB", paddingBottom: 12 }}>
+              <div>
+                <div style={{ fontSize: "1.15rem", fontWeight: 800, color: "#1E3A5F" }}>認證效期與換證詳情</div>
+                <div style={{ fontSize: "0.78rem", color: "#94AEC8", marginTop: 4 }}>
+                  {selectedCert.supplier_name} ({selectedCert.supplier_code})
+                </div>
+              </div>
+              <button 
+                type="button"
+                onClick={() => {
+                  setSelectedCert(null);
+                  setIsRenewing(false);
+                }}
+                style={{ background: "none", border: "none", color: "#94AEC8", fontSize: "1.2rem", cursor: "pointer" }}
+              >
+                <i className="bi bi-x-lg" />
+              </button>
+            </div>
+
+            {!isRenewing ? (
+              <div>
+                {/* 證照主卡資訊 */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20, background: "#F5F8FC", padding: 18, borderRadius: 12 }}>
+                  <div>
+                    <div style={{ fontSize: "0.75rem", color: "#5F7A9B", marginBottom: 4 }}>認證類別</div>
+                    <div style={{ fontWeight: 700, color: "#1E3A5F" }}>{selectedCert.cert_type}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "0.75rem", color: "#5F7A9B", marginBottom: 4 }}>證書編號</div>
+                    <div style={{ fontFamily: "monospace", fontWeight: 600, color: "#1E3A5F" }}>{selectedCert.cert_number}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "0.75rem", color: "#5F7A9B", marginBottom: 4 }}>頒發機構</div>
+                    <div style={{ color: "#1E3A5F" }}>{selectedCert.issued_by}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "0.75rem", color: "#5F7A9B", marginBottom: 4 }}>證書更新日期</div>
+                    <div style={{ color: "#5B8FD9", fontWeight: 700 }}>
+                      {selectedCert.updated_at ? selectedCert.updated_at.slice(0,10) : selectedCert.issue_date}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "0.75rem", color: "#5F7A9B", marginBottom: 4 }}>最新發證日期</div>
+                    <div style={{ color: "#1E3A5F" }}>{selectedCert.issue_date}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "0.75rem", color: "#5F7A9B", marginBottom: 4 }}>有效截止日</div>
+                    <div style={{ color: "#EF4444", fontWeight: 700 }}>{selectedCert.expiry_date}</div>
+                  </div>
+                </div>
+
+                {/* 換證紀錄 */}
+                <div style={{ marginBottom: 24 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                    <div style={{ fontSize: "0.88rem", fontWeight: 700, color: "#1E3A5F" }}>
+                      <i className="bi bi-clock-history" style={{ marginRight: 6, color: "#5B8FD9" }} /> 換證歷史紀錄 (供追溯)
+                    </div>
+                    {user?.role !== "viewer" && (
+                      <button 
+                        className="ev-btn ev-btn-primary" 
+                        style={{ padding: "4px 12px", fontSize: "0.78rem" }}
+                        onClick={() => {
+                          setIsRenewing(true);
+                          setRenewForm({
+                            cert_number: "",
+                            issued_by: selectedCert.issued_by,
+                            issue_date: "",
+                            expiry_date: "",
+                            updated_at: new Date().toISOString().slice(0, 10),
+                            notes: "常規換證更新"
+                          });
+                        }}
+                      >
+                        <i className="bi bi-arrow-repeat" /> 執行換證更新
+                      </button>
+                    )}
+                  </div>
+
+                  <div style={{ background: "#FAFCFF", border: "1px solid #EAF1FB", borderRadius: 8, padding: 12, overflowX: "auto" }}>
+                    {((selectedCert.history || getDemoHistory(selectedCert)).length === 0) ? (
+                      <div style={{ textAlign: "center", padding: "16px 0", color: "#94AEC8", fontSize: "0.8rem" }}>
+                        無歷史換證紀錄
+                      </div>
+                    ) : (
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.78rem" }}>
+                        <thead>
+                          <tr style={{ borderBottom: "1.5px solid #EAF1FB", color: "#5F7A9B", textAlign: "left" }}>
+                            <th style={{ padding: "6px 4px" }}>證書編號</th>
+                            <th style={{ padding: "6px 4px" }}>發證日期</th>
+                            <th style={{ padding: "6px 4px" }}>截止日期</th>
+                            <th style={{ padding: "6px 4px" }}>更新日期</th>
+                            <th style={{ padding: "6px 4px" }}>備註</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(selectedCert.history || getDemoHistory(selectedCert)).map((h: any, idx: number) => (
+                            <tr key={idx} style={{ borderBottom: "1px solid #F3F7FC" }}>
+                              <td style={{ padding: "8px 4px", fontFamily: "monospace", color: "#1E3A5F" }}>{h.cert_number}</td>
+                              <td style={{ padding: "8px 4px", color: "#5F7A9B" }}>{h.issue_date}</td>
+                              <td style={{ padding: "8px 4px", color: "#5F7A9B" }}>{h.expiry_date}</td>
+                              <td style={{ padding: "8px 4px", color: "#5B8FD9" }}>{h.updated_at ? h.updated_at.slice(0,10) : h.issue_date}</td>
+                              <td style={{ padding: "8px 4px", color: "#94AEC8" }}>{h.notes || "自動歷史存檔"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                  <button 
+                    className="ev-btn ev-btn-ghost" 
+                    onClick={() => {
+                      setSelectedCert(null);
+                      setIsRenewing(false);
+                    }}
+                  >
+                    關閉
+                  </button>
+                </div>
+              </div>
+            ) : (
+              // 換證更新的表單
+              <form onSubmit={handleRenewSubmit}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 18 }}>
+                  <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", padding: 12, borderRadius: 8, fontSize: "0.78rem", color: "#92400E" }}>
+                    <i className="bi bi-info-circle-fill" style={{ marginRight: 6 }} />
+                    換證更新後，原有的證書（編號：{selectedCert.cert_number}）將自動存檔至下方的「換證歷史紀錄」中以供追溯，本卡片資訊將被最新證書所替換。
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>最新證書編號 *</label>
+                    <input 
+                      className="ev-input" style={{ width: "100%" }} required
+                      value={renewForm.cert_number} onChange={(e) => setRenewForm({...renewForm, cert_number: e.target.value})}
+                      placeholder="例：TUV-16949-2027-0715"
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>頒發機構 *</label>
+                    <input 
+                      className="ev-input" style={{ width: "100%" }} required
+                      value={renewForm.issued_by} onChange={(e) => setRenewForm({...renewForm, issued_by: e.target.value})}
+                    />
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <div>
+                      <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>發證日期 *</label>
+                      <input 
+                        type="date" className="ev-input" style={{ width: "100%" }} required
+                        value={renewForm.issue_date} 
+                        onChange={(e) => {
+                          const iDate = e.target.value;
+                          let eDate = "";
+                          if (iDate) {
+                            const d = new Date(iDate);
+                            d.setFullYear(d.getFullYear() + 3);
+                            d.setDate(d.getDate() - 1);
+                            eDate = d.toISOString().slice(0, 10);
+                          }
+                          setRenewForm({...renewForm, issue_date: iDate, expiry_date: eDate});
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>有效截止日 *</label>
+                      <input 
+                        type="date" className="ev-input" style={{ width: "100%" }} required
+                        value={renewForm.expiry_date} onChange={(e) => setRenewForm({...renewForm, expiry_date: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>證書更新日期 *</label>
+                    <input 
+                      type="date" className="ev-input" style={{ width: "100%" }} required
+                      value={renewForm.updated_at} onChange={(e) => setRenewForm({...renewForm, updated_at: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>更新備註</label>
+                    <input 
+                      className="ev-input" style={{ width: "100%" }}
+                      value={renewForm.notes} onChange={(e) => setRenewForm({...renewForm, notes: e.target.value})}
+                      placeholder="例如：2027年期中複審換新證"
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", borderTop: "1px solid #EAF1FB", paddingTop: 16 }}>
+                  <button type="button" className="ev-btn ev-btn-ghost" onClick={() => setIsRenewing(false)}>返回詳情</button>
+                  <button type="submit" className="ev-btn ev-btn-primary">確認更新換證</button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
       {showAddModal && (
         <div style={{
