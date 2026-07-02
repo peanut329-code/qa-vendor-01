@@ -1,12 +1,71 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { CRITERIA } from "@/lib/mock-data";
+import type { EvaluationCriteria } from "@/types";
 
 export default function SettingsPage() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<"criteria" | "company" | "notifications">("criteria");
+  const [criteriaList, setCriteriaList] = useState<EvaluationCriteria[]>([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newCriteria, setNewCriteria] = useState({
+    name: "",
+    category: "品質",
+    weight: 10,
+    max_score: 100,
+    description: "",
+  });
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("settings-criteria");
+      if (saved) {
+        try {
+          setCriteriaList(JSON.parse(saved));
+        } catch (e) {
+          setCriteriaList(CRITERIA);
+        }
+      } else {
+        setCriteriaList(CRITERIA);
+      }
+    }
+  }, []);
+
+  const totalWeight = criteriaList.reduce((sum, c) => sum + c.weight, 0);
+
+  function handleSaveSettings() {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("settings-criteria", JSON.stringify(criteriaList));
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    }
+  }
+
+  function handleAddCriteria(e: React.FormEvent) {
+    e.preventDefault();
+    const itemToAdd: EvaluationCriteria = {
+      id: `c-${Date.now()}`,
+      is_active: true,
+      sort_order: criteriaList.length + 1,
+      ...newCriteria,
+    };
+    setCriteriaList(prev => [...prev, itemToAdd]);
+    setShowAddModal(false);
+    setNewCriteria({
+      name: "",
+      category: "品質",
+      weight: 10,
+      max_score: 100,
+      description: "",
+    });
+  }
+
+  function handleDeleteCriteria(id: string) {
+    setCriteriaList(prev => prev.filter(c => c.id !== id));
+  }
 
   if (!user || !["super_admin", "admin"].includes(user.role)) {
     return (
@@ -17,8 +76,6 @@ export default function SettingsPage() {
       </div>
     );
   }
-
-  const totalWeight = CRITERIA.reduce((sum, c) => sum + c.weight, 0);
 
   const TABS = [
     { key: "criteria" as const, label: "評鑑指標設定", icon: "bi-sliders" },
@@ -34,9 +91,16 @@ export default function SettingsPage() {
           <div className="page-title">系統設定</div>
           <div className="page-subtitle">設定評鑑指標、公司資料及系統通知</div>
         </div>
-        <button className="ev-btn ev-btn-primary">
-          <i className="bi bi-check-lg" /> 儲存設定
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {saveSuccess && (
+            <span style={{ fontSize: "0.82rem", color: "#10B981", fontWeight: 600 }}>
+              <i className="bi bi-check-circle-fill" /> 設定儲存成功！
+            </span>
+          )}
+          <button className="ev-btn ev-btn-primary" onClick={handleSaveSettings}>
+            <i className="bi bi-check-lg" /> 儲存設定
+          </button>
+        </div>
       </div>
 
       {/* Tabs + content */}
@@ -113,7 +177,7 @@ export default function SettingsPage() {
                   }}
                 >
                   <span style={{ fontWeight: 700, color: "#1E3A5F", fontSize: "0.9rem" }}>評鑑指標管理</span>
-                  <button className="ev-btn ev-btn-secondary" style={{ fontSize: "0.8rem", padding: "6px 14px" }}>
+                  <button className="ev-btn ev-btn-secondary" onClick={() => setShowAddModal(true)} style={{ fontSize: "0.8rem", padding: "6px 14px" }}>
                     <i className="bi bi-plus" /> 新增指標
                   </button>
                 </div>
@@ -131,7 +195,7 @@ export default function SettingsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {CRITERIA.map((c) => (
+                    {criteriaList.map((c) => (
                       <tr key={c.id}>
                         <td>
                           <span style={{ color: "#94AEC8", fontSize: "0.8rem", fontFamily: "monospace" }}>
@@ -180,7 +244,7 @@ export default function SettingsPage() {
                             <button className="ev-btn ev-btn-secondary" style={{ padding: "4px 10px", fontSize: "0.78rem" }}>
                               <i className="bi bi-pencil" />
                             </button>
-                            <button className="ev-btn ev-btn-danger" style={{ padding: "4px 10px", fontSize: "0.78rem" }}>
+                            <button className="ev-btn ev-btn-danger" onClick={() => handleDeleteCriteria(c.id)} style={{ padding: "4px 10px", fontSize: "0.78rem" }}>
                               <i className="bi bi-trash" />
                             </button>
                           </div>
@@ -295,6 +359,83 @@ export default function SettingsPage() {
           )}
         </div>
       </div>
+
+      {showAddModal && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+          backgroundColor: "rgba(30,58,95,0.4)", backdropFilter: "blur(4px)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+        }}>
+          <div className="ev-card" style={{
+            width: "100%", maxWidth: 480, padding: 24, 
+            boxShadow: "0 10px 30px rgba(30,58,95,0.15)",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#1E3A5F" }}>新增評鑑指標</div>
+              <button 
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                style={{ background: "none", border: "none", color: "#94AEC8", fontSize: "1.2rem", cursor: "pointer" }}
+              >
+                <i className="bi bi-x-lg" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddCriteria}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 18 }}>
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>指標名稱 *</label>
+                  <input 
+                    className="ev-input" style={{ width: "100%" }} required
+                    value={newCriteria.name} onChange={(e) => setNewCriteria({...newCriteria, name: e.target.value})}
+                    placeholder="例如：品質合格率、服務回應速度"
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>指標類別 *</label>
+                  <select 
+                    className="ev-select" style={{ width: "100%" }}
+                    value={newCriteria.category} onChange={(e) => setNewCriteria({...newCriteria, category: e.target.value})}
+                  >
+                    {["品質", "交期", "價格", "服務", "技術", "財務", "合規"].map((c) => (
+                      <option key={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div>
+                    <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>權重 (%) *</label>
+                    <input 
+                      type="number" className="ev-input" style={{ width: "100%" }} required min={1} max={100}
+                      value={newCriteria.weight} onChange={(e) => setNewCriteria({...newCriteria, weight: parseInt(e.target.value) || 0})}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>最高分 *</label>
+                    <input 
+                      type="number" className="ev-input" style={{ width: "100%" }} required min={1}
+                      value={newCriteria.max_score} onChange={(e) => setNewCriteria({...newCriteria, max_score: parseInt(e.target.value) || 100})}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>說明描述</label>
+                  <textarea 
+                    className="ev-input" style={{ width: "100%", height: 60, resize: "none", fontFamily: "inherit" }}
+                    value={newCriteria.description} onChange={(e) => setNewCriteria({...newCriteria, description: e.target.value})}
+                    placeholder="輸入對此評鑑指標的詳細說明..."
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", borderTop: "1px solid #EAF1FB", paddingTop: 16 }}>
+                <button type="button" className="ev-btn ev-btn-ghost" onClick={() => setShowAddModal(false)}>取消</button>
+                <button type="submit" className="ev-btn ev-btn-primary">確認新增</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
