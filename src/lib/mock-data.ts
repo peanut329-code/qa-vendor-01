@@ -313,7 +313,7 @@ export const SCARS: Scar[] = [
     category: "品質",
     root_cause: "供應商原料倉儲溫濕度控制不當，導致漿料特性不穩定；配方管制程序（SOP）未落實，操作人員未遵守標準作業流程，批次間差異持續擴大。",
     corrective_action: "1. 改善倉儲環境，新增溫濕度自動監控系統（完成率 80%）\n2. 重新培訓操作人員，強化 SOP 執行力（已完成）\n3. 增加出廠前批次抽驗頻率，由每批 1 次改為 5 次（執行中）\n4. 導入 SPC 管制圖即時監控黏度變化（導入率 60%）",
-    target_date: "2025-05-15",
+    target_date: "2026-07-31",
     verified_date: null,
     status: "in_progress",
     created_by: "u6",
