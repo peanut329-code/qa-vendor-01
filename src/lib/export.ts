@@ -1,6 +1,7 @@
 import type { Supplier, Evaluation, EvaluationScore, Scar, Certification, AuditEvent, AslRecord, SupplierRisk } from "@/types";
 import { TIER_LABELS, EVAL_STATUS_LABELS, SCAR_STATUS_LABELS, STATUS_LABELS, CERT_STATUS_LABELS, AUDIT_EVENT_TYPE_LABELS, AUDIT_EVENT_STATUS_LABELS, ASL_STATUS_LABELS, RISK_LEVEL_LABELS } from "@/types";
 import { getCertStatus, getDaysUntilExpiry } from "@/lib/utils";
+import { EVALUATIONS } from "@/lib/mock-data";
 
 // ── Excel Export (xlsx) ─────────────────────────────────────────────
 
@@ -12,7 +13,7 @@ export async function exportSuppliersToExcel(suppliers: Supplier[]): Promise<voi
     "分類": s.category,
     "等級": TIER_LABELS[s.tier],
     "最新分數": s.overall_score,
-    "評鑑次數": s.eval_count,
+    "評鑑次數": EVALUATIONS.filter((e) => e.supplier_id === s.id).length,
     "聯絡人": s.contact_name,
     "聯絡電話": s.contact_phone,
     "電子郵件": s.contact_email,

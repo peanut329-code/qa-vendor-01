@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { SUPPLIERS } from "@/lib/mock-data";
+import { SUPPLIERS, EVALUATIONS } from "@/lib/mock-data";
 import { formatDate } from "@/lib/utils";
 import { TIER_LABELS } from "@/types";
 import type { SupplierTier } from "@/types";
@@ -155,7 +155,9 @@ export default function SuppliersPage() {
                       <div style={{ fontSize: "0.75rem", color: "var(--text-dim)" }}>{s.contact_email}</div>
                     </td>
                     <td><span className="code-pill">{s.category}</span></td>
-                    <td style={{ fontFamily: "var(--font-mono)", color: "var(--text-muted)", textAlign: "center" }}>{s.eval_count}</td>
+                    <td style={{ fontFamily: "var(--font-mono)", color: "var(--text-muted)", textAlign: "center" }}>
+                      {EVALUATIONS.filter((e) => e.supplier_id === s.id).length}
+                    </td>
                     <td style={{ textAlign: "right" }}>
                       <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
                         <div style={{ width: 60, height: 5, background: "var(--surface2)", borderRadius: 3, overflow: "hidden" }}>
