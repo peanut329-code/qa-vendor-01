@@ -12,7 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { exportAuditEventsToExcel } from "@/lib/export";
 
 // Today = 2026-05-21 for demo
-const TODAY = "2026-05-21";
+const TODAY = "2026-07-03";
 const [TODAY_YEAR, TODAY_MONTH] = TODAY.split("-").map(Number);
 
 const WEEKDAY_LABELS = ["日", "一", "二", "三", "四", "五", "六"];

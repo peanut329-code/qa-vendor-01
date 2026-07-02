@@ -110,7 +110,7 @@ export default function AslPage() {
     });
   }, [records, statusFilter, search]);
 
-  const today = new Date("2026-05-22");
+  const today = new Date("2026-07-03");
 
   function daysUntil(dateStr: string): number {
     return Math.ceil((new Date(dateStr).getTime() - today.getTime()) / (1000 * 86400));
