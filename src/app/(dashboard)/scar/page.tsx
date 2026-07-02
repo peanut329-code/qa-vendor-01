@@ -53,7 +53,7 @@ export default function ScarPage() {
     if (showAddModal) {
       setNewScar(prev => ({
         ...prev,
-        scar_number: `SCAR-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+        scar_number: `SCAR-2025-${Math.floor(100 + Math.random() * 900)}`,
         supplier_id: SUPPLIERS[0]?.id || "",
       }));
     }
