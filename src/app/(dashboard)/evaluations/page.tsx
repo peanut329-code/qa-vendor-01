@@ -6,7 +6,7 @@ import Link from "next/link";
 import { EVALUATIONS } from "@/lib/mock-data";
 import { getTierColor, getEvalStatusColor, formatDate } from "@/lib/utils";
 import { TIER_LABELS, EVAL_STATUS_LABELS } from "@/types";
-import type { EvaluationStatus } from "@/types";
+import type { EvaluationStatus, SupplierTier } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
 
 const STATUS_TABS: { key: EvaluationStatus | "ALL"; label: string }[] = [
@@ -34,6 +34,7 @@ export default function EvaluationsPage() {
   const [statusFilter, setStatusFilter] = useState<EvaluationStatus | "ALL">("ALL");
   const [search, setSearch] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [evalList, setEvalList] = useState<any[]>([]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -57,23 +58,30 @@ export default function EvaluationsPage() {
           } catch (err) {}
         }
       });
-      if (updated) {
-        setRefreshKey((prev) => prev + 1);
+
+      const savedCustom = localStorage.getItem("evaluations-custom");
+      let custom: any[] = [];
+      if (savedCustom) {
+        try {
+          custom = JSON.parse(savedCustom);
+        } catch (e) {}
       }
+
+      setEvalList([...EVALUATIONS, ...custom]);
     }
-  }, []);
+  }, [refreshKey]);
 
   const canCreate = user && ["super_admin", "admin", "manager", "evaluator"].includes(user.role);
   const canReview = user && ["super_admin", "admin", "manager"].includes(user.role);
 
-  const filtered = EVALUATIONS.filter((e) => {
+  const filtered = evalList.filter((e) => {
     const matchStatus = statusFilter === "ALL" || e.status === statusFilter;
     const matchSearch = !search || e.supplier_name.includes(search) || e.supplier_code.includes(search);
     return matchStatus && matchSearch;
   });
 
-  const counts: Record<string, number> = { ALL: EVALUATIONS.length };
-  EVALUATIONS.forEach((e) => {
+  const counts: Record<string, number> = { ALL: evalList.length };
+  evalList.forEach((e) => {
     counts[e.status] = (counts[e.status] ?? 0) + 1;
   });
 
@@ -247,7 +255,7 @@ export default function EvaluationsPage() {
                       {tierC && ev.tier ? (
                         <span className={`ev-badge ${tierC.bg} ${tierC.text}`}>
                           <span className={`ev-badge-dot ${tierC.dot}`} />
-                          {TIER_LABELS[ev.tier]}
+                          {TIER_LABELS[ev.tier as SupplierTier]}
                         </span>
                       ) : (
                         <span style={{ color: "#C5D8F0" }}>—</span>
@@ -255,7 +263,7 @@ export default function EvaluationsPage() {
                     </td>
                     <td>
                       <span className={`ev-badge ${statusC.bg} ${statusC.text}`}>
-                        {EVAL_STATUS_LABELS[ev.status]}
+                        {EVAL_STATUS_LABELS[ev.status as EvaluationStatus]}
                       </span>
                     </td>
                     <td style={{ color: "#5F7A9B", fontSize: "0.8rem", fontFamily: "monospace" }}>

@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { SUPPLIERS, CRITERIA } from "@/lib/mock-data";
+import { SUPPLIERS, CRITERIA, EVALUATIONS } from "@/lib/mock-data";
 import { scoreToTier, getTierColor } from "@/lib/utils";
 import { TIER_LABELS } from "@/types";
 
@@ -76,6 +76,55 @@ function NewEvaluationContent() {
     if (!supplierId) { alert("請選擇供應商"); return; }
     setSubmitting(true);
     await new Promise((r) => setTimeout(r, 900));
+
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("evaluations-custom");
+      let custom: any[] = [];
+      if (saved) {
+        try { custom = JSON.parse(saved); } catch (e) {}
+      }
+
+      const count = EVALUATIONS.length + custom.length + 1;
+      const formattedNum = String(count).padStart(3, "0");
+      const evalNum = `EVL-${formattedNum}`;
+
+      const newEval = {
+        id: `eval-custom-${Date.now()}`,
+        eval_number: evalNum, // 流水號編號
+        supplier_id: supplierId,
+        supplier_name: selectedSupplier?.name || "",
+        supplier_code: selectedSupplier?.code || "",
+        evaluator_id: user?.id || "u1",
+        evaluator_name: user?.full_name || "系統管理員",
+        period: period,
+        status: isDraft ? "draft" : "approved",
+        total_score: Number(total.toFixed(2)),
+        tier: tier,
+        notes: evalNotes || "無備註",
+        created_at: new Date().toISOString().slice(0, 10),
+        updated_at: new Date().toISOString().slice(0, 10),
+      };
+
+      custom.push(newEval);
+      localStorage.setItem("evaluations-custom", JSON.stringify(custom));
+
+      const scoreRecords = criteriaList.map((c) => ({
+        criteria_id: c.id,
+        criteria_name: c.name,
+        category: c.category,
+        weight: c.weight,
+        score: scores[c.id] ?? 80,
+        weighted_score: Number(((scores[c.id] ?? 80) * c.weight / 100).toFixed(2)),
+        notes: notesMap[c.id] || ""
+      }));
+      localStorage.setItem(`eval-detail-${newEval.id}`, JSON.stringify({
+        total_score: newEval.total_score,
+        tier: newEval.tier,
+        updated_at: newEval.updated_at,
+        scores: scoreRecords
+      }));
+    }
+
     setSubmitting(false);
     setSubmitted(true);
   }
