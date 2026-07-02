@@ -32,8 +32,17 @@ function NewEvaluationContent() {
       let list = CRITERIA;
       if (saved) {
         try {
-          list = JSON.parse(saved);
+          const parsed = JSON.parse(saved);
+          const totalW = parsed.reduce((sum: number, c: any) => sum + (c.is_active ? c.weight : 0), 0);
+          if (totalW !== 100 || parsed.filter((c: any) => c.is_active).length !== 5) {
+            localStorage.setItem("settings-criteria", JSON.stringify(CRITERIA));
+            list = CRITERIA;
+          } else {
+            list = parsed;
+          }
         } catch (e) {}
+      } else {
+        localStorage.setItem("settings-criteria", JSON.stringify(CRITERIA));
       }
       setCriteriaList(list);
       setScores(Object.fromEntries(list.map((c) => [c.id, 80])));

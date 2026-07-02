@@ -41,15 +41,25 @@ export default function SettingsPage() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       const savedCriteria = localStorage.getItem("settings-criteria");
+      let list = CRITERIA;
       if (savedCriteria) {
         try {
-          setCriteriaList(JSON.parse(savedCriteria));
+          const parsed = JSON.parse(savedCriteria);
+          const totalW = parsed.reduce((sum: number, c: any) => sum + (c.is_active ? c.weight : 0), 0);
+          if (totalW !== 100 || parsed.filter((c: any) => c.is_active).length !== 5) {
+            localStorage.setItem("settings-criteria", JSON.stringify(CRITERIA));
+            list = CRITERIA;
+          } else {
+            list = parsed;
+          }
         } catch (e) {
-          setCriteriaList(CRITERIA);
+          list = CRITERIA;
         }
       } else {
-        setCriteriaList(CRITERIA);
+        localStorage.setItem("settings-criteria", JSON.stringify(CRITERIA));
+        list = CRITERIA;
       }
+      setCriteriaList(list);
 
       const savedCompany = localStorage.getItem("settings-company");
       if (savedCompany) {

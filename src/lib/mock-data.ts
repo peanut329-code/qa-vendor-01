@@ -160,7 +160,7 @@ export const EVALUATIONS: Evaluation[] = [
     supplier_id: "s3", supplier_name: "光揚光罩科技股份有限公司", supplier_code: "SUP-003",
     evaluator_id: "u5", evaluator_name: "李美玲",
     period: "2026-Q2",
-    status: "completed", total_score: 85.15, tier: "B",
+    status: "approved", total_score: 85.15, tier: "B",
     notes: "DUV 光罩 CD 精度達標，交期延誤 2 次，建議加強產能規劃。",
     created_at: "2026-05-14T09:00:00Z", updated_at: "2026-06-03T14:00:00Z",
   },
