@@ -18,11 +18,11 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard",      icon: "bi-speedometer2",              label: "儀表板",         allowedRoles: ["super_admin","admin","manager","evaluator","viewer"] },
   { href: "/suppliers",      icon: "bi-building-fill",             label: "供應商管理",     allowedRoles: ["super_admin","admin","manager","evaluator","viewer"] },
-  { href: "/evaluations",    icon: "bi-clipboard2-check-fill",     label: "評鑑作業",       allowedRoles: ["super_admin","admin","manager","evaluator","viewer"] },
-  { href: "/scar",           icon: "bi-exclamation-triangle-fill", label: "SCAR 管理",      allowedRoles: ["super_admin","admin","manager","viewer"], badge: 7 },
-  { href: "/certifications", icon: "bi-patch-check-fill",          label: "認證效期",       allowedRoles: ["super_admin","admin","manager","viewer"], badge: 3 },
-  { href: "/audit",          icon: "bi-calendar3-week-fill",       label: "稽核行事曆",     allowedRoles: ["super_admin","admin","manager","viewer"] },
   { href: "/asl",            icon: "bi-list-check",                label: "合格供應商名單", allowedRoles: ["super_admin","admin","manager","viewer"] },
+  { href: "/certifications", icon: "bi-patch-check-fill",          label: "認證效期",       allowedRoles: ["super_admin","admin","manager","viewer"], badge: 3 },
+  { href: "/evaluations",    icon: "bi-clipboard2-check-fill",     label: "評鑑作業",       allowedRoles: ["super_admin","admin","manager","evaluator","viewer"] },
+  { href: "/audit",          icon: "bi-calendar3-week-fill",       label: "稽核行事曆",     allowedRoles: ["super_admin","admin","manager","viewer"] },
+  { href: "/scar",           icon: "bi-exclamation-triangle-fill", label: "SCAR 管理",      allowedRoles: ["super_admin","admin","manager","viewer"], badge: 7 },
   { href: "/risk",           icon: "bi-diagram-3-fill",            label: "風險評估矩陣",   allowedRoles: ["super_admin","admin","manager","viewer"] },
   { href: "/reports",        icon: "bi-bar-chart-line-fill",       label: "報表分析",       allowedRoles: ["super_admin","admin","manager","evaluator","viewer"] },
 ];
