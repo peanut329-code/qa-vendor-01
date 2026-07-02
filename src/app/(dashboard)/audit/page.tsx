@@ -53,6 +53,7 @@ export default function AuditPage() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("calendar");
   const [typeFilter, setTypeFilter] = useState<AuditEventType | "ALL">("ALL");
+  const [monthFilter, setMonthFilter] = useState<string | "ALL">("ALL");
 
   const [eventsList, setEventsList] = useState<AuditEvent[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -126,10 +127,11 @@ export default function AuditPage() {
   const upcomingEvents = useMemo(() => {
     const filtered = eventsList.filter((e) => {
       const matchType = typeFilter === "ALL" || e.event_type === typeFilter;
-      return matchType;
+      const matchMonth = monthFilter === "ALL" || e.date.startsWith(monthFilter);
+      return matchType && matchMonth;
     });
     return filtered.sort((a, b) => a.date.localeCompare(b.date));
-  }, [eventsList, typeFilter]);
+  }, [eventsList, typeFilter, monthFilter]);
 
   // Summary counts
   const typeCounts: Record<string, number> = {};
@@ -214,7 +216,10 @@ export default function AuditPage() {
             {(["calendar", "list"] as ViewMode[]).map((v) => (
               <button
                 key={v}
-                onClick={() => setViewMode(v)}
+                onClick={() => {
+                  setViewMode(v);
+                  if (v === "calendar") setMonthFilter("ALL");
+                }}
                 style={{
                   padding: "7px 14px", fontSize: "0.82rem", fontWeight: 500,
                   background: viewMode === v ? "#5B8FD9" : "white",
@@ -495,7 +500,13 @@ export default function AuditPage() {
                 return (
                   <button
                     key={`${y}-${m}`}
-                    onClick={() => { setYear(y); setMonth(m); setSelectedDate(null); }}
+                    onClick={() => {
+                      setYear(y);
+                      setMonth(m);
+                      setSelectedDate(null);
+                      setMonthFilter(`${y}-${String(m).padStart(2, "0")}`);
+                      setViewMode("list");
+                    }}
                     style={{
                       display: "flex", justifyContent: "space-between", alignItems: "center",
                       width: "100%", padding: "7px 10px", borderRadius: 7, marginBottom: 4,
@@ -524,6 +535,23 @@ export default function AuditPage() {
       ) : (
         /* ── List View ── */
         <div className="ev-card" style={{ padding: 0, overflow: "hidden" }}>
+          {monthFilter !== "ALL" && (
+            <div style={{
+              background: "#F0F7FF", borderBottom: "1px solid #D2E5FC",
+              padding: "10px 16px", display: "flex", justifyContent: "space-between", alignItems: "center"
+            }}>
+              <span style={{ fontSize: "0.82rem", color: "#1E3A5F", fontWeight: 600 }}>
+                <i className="bi bi-funnel-fill" style={{ color: "#5B8FD9", marginRight: 6 }} />
+                正在篩選：{monthFilter.split("-")[0]} 年 {Number(monthFilter.split("-")[1])} 月的事項（共 {upcomingEvents.length} 筆）
+              </span>
+              <button
+                className="ev-btn ev-btn-ghost" style={{ padding: "4px 10px", fontSize: "0.76rem", background: "white", border: "1px solid #C5D8F0" }}
+                onClick={() => setMonthFilter("ALL")}
+              >
+                清除篩選，顯示所有月份
+              </button>
+            </div>
+          )}
           {/* Type filter tabs */}
           <div style={{ display: "flex", borderBottom: "1px solid #EAF1FB", background: "#FAFCFF", padding: "0 12px" }}>
             {([
