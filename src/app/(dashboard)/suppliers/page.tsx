@@ -8,6 +8,7 @@ import { formatDate } from "@/lib/utils";
 import { TIER_LABELS } from "@/types";
 import type { SupplierTier } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
+import { exportSuppliersToExcel } from "@/lib/export";
 
 const CATEGORIES = ["全部", "矽晶圓", "特殊氣體", "光罩製造", "封裝測試", "製程化學品",
   "機構零件", "電子元件", "塑膠原料", "原物料", "加工製造", "包裝", "口鼻罩", "頸部"];
@@ -38,6 +39,152 @@ export default function SuppliersPage() {
       setSuppliersList([...SUPPLIERS, ...custom]);
     }
   }, []);
+
+  async function handleXlsxImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const data = evt.target?.result;
+        if (!data) return;
+        
+        const { read, utils } = await import("xlsx");
+        const workbook = read(data, { type: "array" });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        
+        const rows: any[] = utils.sheet_to_json(worksheet);
+        if (!rows.length) {
+          alert("Excel 檔案為空，請確認內容！");
+          return;
+        }
+
+        const importedList: any[] = [];
+        rows.forEach((row, i) => {
+          const name = row["供應商名稱"] || row["名稱"] || row["name"] || row["Name"] || "";
+          const code = row["供應商代碼"] || row["代碼"] || row["code"] || row["Code"] || "";
+          const category = row["供應商品類"] || row["類別"] || row["category"] || row["Category"] || "原物料";
+          const email = row["電子郵件"] || row["信箱"] || row["Email"] || row["email"] || row["contact_email"] || "";
+          const phone = row["電話"] || row["Phone"] || row["phone"] || row["contact_phone"] || "";
+          const address = row["地址"] || row["Address"] || row["address"] || "";
+          const score = Number(row["最新分數"] || row["分數"] || row["overall_score"] || row["score"] || 100);
+          
+          let tier = row["等級"] || row["tier"] || row["Tier"] || "";
+          if (!tier) {
+            if (score >= 90) tier = "A";
+            else if (score >= 80) tier = "B";
+            else if (score >= 70) tier = "C";
+            else tier = "D";
+          }
+
+          if (!name || !code) {
+            return;
+          }
+
+          importedList.push({
+            id: `s-${Date.now()}-${i}`,
+            name,
+            code,
+            category,
+            contact_email: email,
+            contact_phone: phone,
+            address,
+            overall_score: score,
+            tier: tier.toUpperCase(),
+            status: "active",
+            created_at: new Date().toISOString(),
+          });
+        });
+
+        if (importedList.length === 0) {
+          alert("沒有成功解析出任何供應商資料。請確認 Excel 包含「供應商名稱」與「代碼」！");
+          return;
+        }
+
+        const saved = localStorage.getItem("suppliers-custom");
+        let custom: any[] = [];
+        if (saved) {
+          try { custom = JSON.parse(saved); } catch (e) {}
+        }
+        
+        const existingCodes = new Set([...SUPPLIERS, ...custom].map(s => s.code));
+        const filteredImported = importedList.filter(s => {
+          if (existingCodes.has(s.code)) {
+            return false;
+          }
+          return true;
+        });
+
+        if (filteredImported.length === 0) {
+          alert("匯入的所有供應商代碼均與系統現有廠商重複！");
+          return;
+        }
+
+        const updatedCustom = [...custom, ...filteredImported];
+        localStorage.setItem("suppliers-custom", JSON.stringify(updatedCustom));
+        setSuppliersList([...SUPPLIERS, ...updatedCustom]);
+        
+        alert(`成功匯入 ${filteredImported.length} 家供應商！${importedList.length - filteredImported.length > 0 ? `（其中 ${importedList.length - filteredImported.length} 家因代碼重複跳過）` : ""}`);
+      } catch (err) {
+        console.error(err);
+        alert("Excel 檔案解析失敗，請確認檔案格式是否正確。");
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = "";
+  }
+
+  function downloadTemplate() {
+    import("xlsx").then(({ utils, write }) => {
+      const headers = [
+        "供應商名稱",
+        "供應商代碼",
+        "供應商品類",
+        "最新分數",
+        "電子郵件",
+        "電話",
+        "地址"
+      ];
+      
+      const sampleData = [
+        {
+          "供應商名稱": "範例半導體股份有限公司",
+          "供應商代碼": "SUP-999",
+          "供應商品類": "矽晶圓",
+          "最新分數": 95,
+          "電子郵件": "service@sample.com",
+          "電話": "02-2345-6789",
+          "地址": "新竹市科學園區研發一路 1 號"
+        },
+        {
+          "供應商名稱": "測試封測技術有限公司",
+          "供應商代碼": "SUP-888",
+          "供應商品類": "封裝測試",
+          "最新分數": 82,
+          "電子郵件": "contact@testpack.com",
+          "電話": "03-9876-5432",
+          "地址": "桃園市龍潭區科學路 88 號"
+        }
+      ];
+
+      const ws = utils.json_to_sheet(sampleData, { header: headers });
+      const wb = utils.book_new();
+      utils.book_append_sheet(wb, ws, "供應商匯入範本");
+
+      const excelBuffer = write(wb, { bookType: "xlsx", type: "array" });
+      const data = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      
+      const url = window.URL.createObjectURL(data);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "供應商匯入範本.xlsx");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+  }
 
   const canEdit = user && ["super_admin", "admin"].includes(user.role);
 
@@ -72,8 +219,23 @@ export default function SuppliersPage() {
           <div className="page-subtitle">共 {suppliersList.length} 家供應商，{suppliersList.filter((s) => s.status === "active").length} 家正常合作中</div>
         </div>
         {canEdit && (
-          <div style={{ display: "flex", gap: 8 }}>
-            <button className="btn"><i className="bi bi-download" /> 匯出</button>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <button className="btn" style={{ background: "white", color: "var(--primary)", borderColor: "var(--primary)" }} onClick={downloadTemplate}>
+              <i className="bi bi-file-earmark-arrow-down" /> 下載範本
+            </button>
+            <button className="btn" onClick={() => document.getElementById("xlsx-import-input")?.click()}>
+              <i className="bi bi-upload" /> 匯入 Excel
+            </button>
+            <input 
+              type="file" 
+              id="xlsx-import-input" 
+              accept=".xlsx, .xls" 
+              style={{ display: "none" }} 
+              onChange={handleXlsxImport}
+            />
+            <button className="btn" onClick={() => exportSuppliersToExcel(suppliersList)}>
+              <i className="bi bi-download" /> 匯出
+            </button>
             <button className="btn btn-primary" onClick={() => router.push("/suppliers/new")}>
               <i className="bi bi-plus-circle" /> 新增供應商
             </button>
