@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 // ─── KPI data ────────────────────────────────────────────────
 const STATS = {
   totalSuppliers:    SUPPLIERS.length,
-  thisQuarterEvals:  EVALUATIONS.filter((e) => e.period?.includes("2027-Q3")).length,
+  thisQuarterEvals:  EVALUATIONS.filter((e) => e.period?.includes("2026-Q2")).length,
   avgScore:          84.6,
   pendingApproval:   EVALUATIONS.filter((e) => e.status === "completed").length,
   openSCAR:          SCARS.filter((s) => s.status === "open" || s.status === "in_progress").length,
