@@ -36,9 +36,53 @@ export default function SuppliersPage() {
           custom = JSON.parse(saved);
         } catch (e) {}
       }
-      setSuppliersList([...SUPPLIERS, ...custom]);
+
+      const deletedSaved = localStorage.getItem("suppliers-deleted");
+      let deletedIds: string[] = [];
+      if (deletedSaved) {
+        try {
+          deletedIds = JSON.parse(deletedSaved);
+        } catch (e) {}
+      }
+
+      const allSuppliers = [...SUPPLIERS, ...custom];
+      const activeSuppliers = allSuppliers.filter((s) => !deletedIds.includes(s.id));
+      setSuppliersList(activeSuppliers);
     }
   }, []);
+
+  function handleDeleteSupplier(id: string, name: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!window.confirm(`確定要刪除供應商「${name}」嗎？此操作將無法復原。`)) {
+      return;
+    }
+
+    if (typeof window !== "undefined") {
+      const deletedSaved = localStorage.getItem("suppliers-deleted");
+      let deletedIds: string[] = [];
+      if (deletedSaved) {
+        try {
+          deletedIds = JSON.parse(deletedSaved);
+        } catch (err) {}
+      }
+      if (!deletedIds.includes(id)) {
+        deletedIds.push(id);
+        localStorage.setItem("suppliers-deleted", JSON.stringify(deletedIds));
+      }
+
+      const customSaved = localStorage.getItem("suppliers-custom");
+      if (customSaved) {
+        try {
+          let custom: any[] = JSON.parse(customSaved);
+          const filteredCustom = custom.filter((s) => s.id !== id);
+          localStorage.setItem("suppliers-custom", JSON.stringify(filteredCustom));
+        } catch (err) {}
+      }
+    }
+
+    setSuppliersList((prev) => prev.filter((s) => s.id !== id));
+    alert(`已成功刪除供應商「${name}」。`);
+  }
 
   async function handleXlsxImport(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -358,9 +402,25 @@ export default function SuppliersPage() {
                           </button>
                         </Link>
                         {canEdit && (
-                          <button className="btn" style={{ padding: "4px 10px", fontSize: "0.78rem" }}>
-                            <i className="bi bi-pencil" />
-                          </button>
+                          <>
+                            <button className="btn" style={{ padding: "4px 10px", fontSize: "0.78rem" }}>
+                              <i className="bi bi-pencil" />
+                            </button>
+                            <button 
+                              className="btn" 
+                              style={{ 
+                                padding: "4px 10px", 
+                                fontSize: "0.78rem", 
+                                color: "#EF4444", 
+                                borderColor: "#FEE2E2", 
+                                background: "#FEF2F2" 
+                              }}
+                              onClick={(e) => handleDeleteSupplier(s.id, s.name, e)}
+                              title="刪除供應商"
+                            >
+                              <i className="bi bi-trash" />
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>
