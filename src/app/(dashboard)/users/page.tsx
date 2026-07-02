@@ -1,16 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { DEMO_USERS } from "@/lib/mock-data";
 import { getRoleColor, formatDate } from "@/lib/utils";
 import { ROLE_LABELS, ROLE_LABELS_BILINGUAL } from "@/types";
-import type { UserRole } from "@/types";
+import type { UserRole, User } from "@/types";
 
 const ROLE_KEYS_INVITABLE: UserRole[] = ["admin", "manager", "evaluator", "viewer"];
 
-function InviteModal({ onClose }: { onClose: () => void }) {
+function InviteModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (newUser: any) => void }) {
   const [form, setForm] = useState({ full_name: "", username: "", email: "", department: "", role: "viewer" as UserRole });
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
@@ -33,6 +33,30 @@ function InviteModal({ onClose }: { onClose: () => void }) {
     if (!validate()) return;
     setSubmitting(true);
     await new Promise((r) => setTimeout(r, 700));
+
+    const itemToAdd = {
+      id: `u-${Date.now()}`,
+      full_name: form.full_name,
+      username: form.username,
+      email: form.email || `${form.username}@company.com`,
+      department: form.department,
+      role: form.role,
+      status: "active",
+      last_login: null,
+      created_at: new Date().toISOString().split('T')[0],
+    };
+
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("users-custom");
+      let current: any[] = [];
+      if (saved) {
+        try { current = JSON.parse(saved); } catch (e) {}
+      }
+      current.push(itemToAdd);
+      localStorage.setItem("users-custom", JSON.stringify(current));
+    }
+
+    onSuccess(itemToAdd);
     setSubmitting(false);
     setDone(true);
   }
@@ -169,6 +193,24 @@ export default function UsersPage() {
   const [roleFilter, setRoleFilter] = useState<UserRole | "ALL">("ALL");
   const [search, setSearch] = useState("");
   const [showInvite, setShowInvite] = useState(false);
+  const [usersList, setUsersList] = useState<User[]>([]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("users-custom");
+      let custom: any[] = [];
+      if (saved) {
+        try {
+          custom = JSON.parse(saved);
+        } catch (e) {}
+      }
+      setUsersList([...DEMO_USERS, ...custom]);
+    }
+  }, []);
+
+  function handleInviteSuccess(newUser: any) {
+    setUsersList(prev => [...prev, newUser]);
+  }
 
   if (!user || !["super_admin", "admin"].includes(user.role)) {
     return (
@@ -184,14 +226,14 @@ export default function UsersPage() {
     );
   }
 
-  const filtered = DEMO_USERS.filter((u) => {
+  const filtered = usersList.filter((u) => {
     const matchRole = roleFilter === "ALL" || u.role === roleFilter;
     const matchSearch = !search || u.full_name.includes(search) || u.email.includes(search) || u.department.includes(search);
     return matchRole && matchSearch;
   });
 
-  const roleCounts: Record<string, number> = { ALL: DEMO_USERS.length };
-  DEMO_USERS.forEach((u) => {
+  const roleCounts: Record<string, number> = { ALL: usersList.length };
+  usersList.forEach((u) => {
     roleCounts[u.role] = (roleCounts[u.role] ?? 0) + 1;
   });
 
@@ -227,7 +269,7 @@ export default function UsersPage() {
             cursor: "pointer",
           }}
         >
-          全部 ({DEMO_USERS.length})
+          全部 ({usersList.length})
         </button>
         {ROLE_KEYS.map((r) => {
           const c = getRoleColor(r);
@@ -430,7 +472,7 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {showInvite && <InviteModal onClose={() => setShowInvite(false)} />}
+      {showInvite && <InviteModal onClose={() => setShowInvite(false)} onSuccess={handleInviteSuccess} />}
     </div>
   );
 }

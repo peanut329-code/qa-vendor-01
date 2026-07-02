@@ -3,7 +3,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { AUDIT_EVENTS } from "@/lib/mock-data";
+import { AUDIT_EVENTS, SUPPLIERS } from "@/lib/mock-data";
+import type { AuditEvent } from "@/types";
 import { getAuditEventColor } from "@/lib/utils";
 import { AUDIT_EVENT_TYPE_LABELS, AUDIT_EVENT_STATUS_LABELS } from "@/types";
 import type { AuditEventType, AuditEventStatus } from "@/types";
@@ -51,11 +52,48 @@ export default function AuditPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("calendar");
   const [typeFilter, setTypeFilter] = useState<AuditEventType | "ALL">("ALL");
 
+  const [eventsList, setEventsList] = useState<AuditEvent[]>([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [suppliersList, setSuppliersList] = useState<any[]>([]);
+  const [newEvent, setNewEvent] = useState({
+    title: "",
+    supplier_id: "",
+    event_type: "audit_visit" as AuditEventType,
+    date: "",
+    notes: "",
+  });
+
   useEffect(() => {
     if (user && !["super_admin", "admin", "manager", "viewer"].includes(user.role)) {
       router.replace("/dashboard");
     }
   }, [user, router]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedAudits = localStorage.getItem("audits-custom");
+      let customAudits: any[] = [];
+      if (savedAudits) {
+        try {
+          customAudits = JSON.parse(savedAudits);
+        } catch (e) {}
+      }
+      setEventsList([...AUDIT_EVENTS, ...customAudits]);
+
+      const savedSups = localStorage.getItem("suppliers-custom");
+      let customSups: any[] = [];
+      if (savedSups) {
+        try {
+          customSups = JSON.parse(savedSups);
+        } catch (e) {}
+      }
+      const allSups = [...SUPPLIERS, ...customSups];
+      setSuppliersList(allSups);
+      if (allSups.length > 0) {
+        setNewEvent((prev) => ({ ...prev, supplier_id: allSups[0].id }));
+      }
+    }
+  }, []);
 
   if (!user || !["super_admin", "admin", "manager", "viewer"].includes(user.role)) {
     return <AccessDenied />;
@@ -64,11 +102,14 @@ export default function AuditPage() {
   const canExport = user && ["super_admin", "admin", "manager"].includes(user.role);
 
   // Events for current view month
-  const monthEvents = useMemo(() => getMonthEvents(AUDIT_EVENTS, year, month), [year, month]);
+  const monthEvents = useMemo(() => {
+    const prefix = `${year}-${String(month).padStart(2, "0")}`;
+    return eventsList.filter((e) => e.date.startsWith(prefix));
+  }, [eventsList, year, month]);
 
   // Events map by date
   const eventsByDate = useMemo(() => {
-    const map: Record<string, typeof AUDIT_EVENTS> = {};
+    const map: Record<string, AuditEvent[]> = {};
     monthEvents.forEach((e) => {
       if (!map[e.date]) map[e.date] = [];
       map[e.date].push(e);
@@ -81,16 +122,54 @@ export default function AuditPage() {
 
   // All upcoming events (for list view)
   const upcomingEvents = useMemo(() => {
-    const filtered = AUDIT_EVENTS.filter((e) => {
+    const filtered = eventsList.filter((e) => {
       const matchType = typeFilter === "ALL" || e.event_type === typeFilter;
       return matchType;
     });
     return filtered.sort((a, b) => a.date.localeCompare(b.date));
-  }, [typeFilter]);
+  }, [eventsList, typeFilter]);
 
   // Summary counts
   const typeCounts: Record<string, number> = {};
-  AUDIT_EVENTS.forEach((e) => { typeCounts[e.event_type] = (typeCounts[e.event_type] ?? 0) + 1; });
+  eventsList.forEach((e) => { typeCounts[e.event_type] = (typeCounts[e.event_type] ?? 0) + 1; });
+
+  function handleAddAudit(e: React.FormEvent) {
+    e.preventDefault();
+    const targetSup = suppliersList.find((s) => s.id === newEvent.supplier_id);
+    
+    const itemToAdd = {
+      id: `ae-${Date.now()}`,
+      title: newEvent.title,
+      supplier_id: targetSup ? targetSup.id : "",
+      supplier_name: targetSup ? targetSup.name : "（全體）",
+      supplier_code: targetSup ? targetSup.code : "",
+      event_type: newEvent.event_type,
+      date: newEvent.date,
+      status: "scheduled" as AuditEventStatus,
+      notes: newEvent.notes,
+    };
+
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("audits-custom");
+      let current: any[] = [];
+      if (saved) {
+        try {
+          current = JSON.parse(saved);
+        } catch (e) {}
+      }
+      current.push(itemToAdd);
+      localStorage.setItem("audits-custom", JSON.stringify(current));
+    }
+
+    setEventsList((prev) => [...prev, itemToAdd]);
+    setShowAddModal(false);
+    setNewEvent((prev) => ({
+      ...prev,
+      title: "",
+      date: "",
+      notes: "",
+    }));
+  }
 
   function prevMonth() {
     if (month === 1) { setYear((y) => y - 1); setMonth(12); }
@@ -146,7 +225,7 @@ export default function AuditPage() {
               </button>
             ))}
           </div>
-          <button className="ev-btn ev-btn-primary">
+          <button className="ev-btn ev-btn-primary" onClick={() => setShowAddModal(true)}>
             <i className="bi bi-plus-lg" /> 新增事項
           </button>
         </div>
@@ -566,6 +645,85 @@ export default function AuditPage() {
               沒有符合條件的事項
             </div>
           )}
+        </div>
+      )}
+      {showAddModal && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+          backgroundColor: "rgba(30,58,95,0.4)", backdropFilter: "blur(4px)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+        }}>
+          <div className="ev-card" style={{
+            width: "100%", maxWidth: 480, padding: 24, 
+            boxShadow: "0 10px 30px rgba(30,58,95,0.15)",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#1E3A5F" }}>新增稽核與行程事項</div>
+              <button 
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                style={{ background: "none", border: "none", color: "#94AEC8", fontSize: "1.2rem", cursor: "pointer" }}
+              >
+                <i className="bi bi-x-lg" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddAudit}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 18 }}>
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>事項名稱 *</label>
+                  <input 
+                    className="ev-input" style={{ width: "100%" }} required
+                    value={newEvent.title} onChange={(e) => setNewEvent({...newEvent, title: e.target.value})}
+                    placeholder="例：先進製程化學品現場稽核"
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>供應商 *</label>
+                  <select 
+                    className="ev-select" style={{ width: "100%" }} required
+                    value={newEvent.supplier_id} onChange={(e) => setNewEvent({...newEvent, supplier_id: e.target.value})}
+                  >
+                    <option value="">（全體 / 內部事項）</option>
+                    {suppliersList.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name} ({s.code})</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>事件類別 *</label>
+                  <select 
+                    className="ev-select" style={{ width: "100%" }}
+                    value={newEvent.event_type} onChange={(e) => setNewEvent({...newEvent, event_type: e.target.value as AuditEventType})}
+                  >
+                    {Object.entries(AUDIT_EVENT_TYPE_LABELS).map(([k, v]) => (
+                      <option key={k} value={k}>{v}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>日期 *</label>
+                  <input 
+                    type="date" className="ev-input" style={{ width: "100%" }} required
+                    value={newEvent.date} onChange={(e) => setNewEvent({...newEvent, date: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>說明備註</label>
+                  <input 
+                    className="ev-input" style={{ width: "100%" }}
+                    value={newEvent.notes} onChange={(e) => setNewEvent({...newEvent, notes: e.target.value})}
+                    placeholder="輸入對此稽核行程的備註事項..."
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", borderTop: "1px solid #EAF1FB", paddingTop: 16 }}>
+                <button type="button" className="ev-btn ev-btn-ghost" onClick={() => setShowAddModal(false)}>取消</button>
+                <button type="submit" className="ev-btn ev-btn-primary">確認新增</button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
