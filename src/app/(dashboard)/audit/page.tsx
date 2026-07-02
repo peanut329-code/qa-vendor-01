@@ -81,7 +81,15 @@ export default function AuditPage() {
           customAudits = JSON.parse(savedAudits);
         } catch (e) {}
       }
-      setEventsList([...AUDIT_EVENTS, ...customAudits]);
+      const allEvents = [...AUDIT_EVENTS, ...customAudits];
+      const updatedEvents = allEvents.map((e) => {
+        const savedStatus = localStorage.getItem(`audit-status-${e.id}`);
+        if (savedStatus) {
+          return { ...e, status: savedStatus as AuditEventStatus };
+        }
+        return e;
+      });
+      setEventsList(updatedEvents);
 
       const savedSups = localStorage.getItem("suppliers-custom");
       let customSups: any[] = [];
@@ -98,11 +106,21 @@ export default function AuditPage() {
     }
   }, []);
 
+  function handleStatusChange(eventId: string, newStatus: AuditEventStatus) {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`audit-status-${eventId}`, newStatus);
+    }
+    setEventsList((prev) =>
+      prev.map((e) => (e.id === eventId ? { ...e, status: newStatus } : e))
+    );
+  }
+
   if (!user || !["super_admin", "admin", "manager", "viewer"].includes(user.role)) {
     return <AccessDenied />;
   }
 
   const canExport = user && ["super_admin", "admin", "manager"].includes(user.role);
+  const canEditStatus = user && ["super_admin", "admin", "manager"].includes(user.role);
 
   // Events for current view month
   const monthEvents = useMemo(() => {
@@ -639,16 +657,36 @@ export default function AuditPage() {
                         )}
                       </td>
                       <td>
-                        <span
-                          style={{
-                            display: "inline-flex", alignItems: "center", gap: 4,
-                            padding: "2px 9px", borderRadius: 9999, fontSize: "0.75rem", fontWeight: 600,
-                            background: ev.status === "scheduled" ? "#EDF3FA" : ev.status === "completed" ? "#D1FAE5" : "#FEF2F2",
-                            color: ev.status === "scheduled" ? "#5B8FD9" : ev.status === "completed" ? "#065F46" : "#991B1B",
-                          }}
-                        >
-                          {AUDIT_EVENT_STATUS_LABELS[ev.status]}
-                        </span>
+                        {canEditStatus ? (
+                          <select
+                            value={ev.status}
+                            onChange={(e) => handleStatusChange(ev.id, e.target.value as AuditEventStatus)}
+                            style={{
+                              display: "inline-flex", alignItems: "center",
+                              padding: "3px 8px", borderRadius: 9999, fontSize: "0.75rem", fontWeight: 600,
+                              background: ev.status === "scheduled" ? "#EDF3FA" : ev.status === "completed" ? "#D1FAE5" : ev.status === "overdue" ? "#FEF2F2" : "#F3F4F6",
+                              color: ev.status === "scheduled" ? "#5B8FD9" : ev.status === "completed" ? "#065F46" : ev.status === "overdue" ? "#991B1B" : "#374151",
+                              border: "1px solid transparent", cursor: "pointer",
+                              outline: "none",
+                            }}
+                          >
+                            <option value="scheduled">已排定</option>
+                            <option value="completed">已完成</option>
+                            <option value="overdue">逾期未完成</option>
+                            <option value="cancelled">已取消</option>
+                          </select>
+                        ) : (
+                          <span
+                            style={{
+                              display: "inline-flex", alignItems: "center", gap: 4,
+                              padding: "2px 9px", borderRadius: 9999, fontSize: "0.75rem", fontWeight: 600,
+                              background: ev.status === "scheduled" ? "#EDF3FA" : ev.status === "completed" ? "#D1FAE5" : ev.status === "overdue" ? "#FEF2F2" : "#F3F4F6",
+                              color: ev.status === "scheduled" ? "#5B8FD9" : ev.status === "completed" ? "#065F46" : ev.status === "overdue" ? "#991B1B" : "#374151",
+                            }}
+                          >
+                            {AUDIT_EVENT_STATUS_LABELS[ev.status]}
+                          </span>
+                        )}
                       </td>
                       <td style={{ maxWidth: 220, fontSize: "0.78rem", color: "#5F7A9B" }}>
                         <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={ev.notes}>
