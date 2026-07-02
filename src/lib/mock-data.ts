@@ -180,9 +180,9 @@ export const EVALUATIONS: Evaluation[] = [
     supplier_id: "s4", supplier_name: "精密封測服務股份有限公司", supplier_code: "SUP-004",
     evaluator_id: "u6", evaluator_name: "張偉誠",
     period: "2026-Q2",
-    status: "in_progress", total_score: null, tier: null,
-    notes: "",
-    created_at: "2026-06-05T09:00:00Z", updated_at: "2026-06-05T09:00:00Z",
+    status: "approved", total_score: 83.45, tier: "B",
+    notes: "Flip-Chip 封裝良率提升至 99.1%，AEC-Q102 認證已正式取得，整體品質管理有顯著改善。",
+    created_at: "2026-06-05T09:00:00Z", updated_at: "2026-06-20T14:00:00Z",
   },
   {
     id: "e8",
@@ -200,9 +200,9 @@ export const EVALUATIONS: Evaluation[] = [
     supplier_id: "s5", supplier_name: "先進製程化學品股份有限公司", supplier_code: "SUP-005",
     evaluator_id: "u5", evaluator_name: "李美玲",
     period: "2026-Q2",
-    status: "draft", total_score: null, tier: null,
-    notes: "",
-    created_at: "2026-06-10T09:00:00Z", updated_at: "2026-06-10T09:00:00Z",
+    status: "approved", total_score: 75.10, tier: "C",
+    notes: "CMP 漿料黏度控制有初步改善，SPC 管制導入率提升，但仍需密切觀察後續穩定性。",
+    created_at: "2026-06-10T09:00:00Z", updated_at: "2026-06-25T14:00:00Z",
   },
   {
     id: "e10",
@@ -278,7 +278,15 @@ export const EVALUATION_SCORES: Record<string, EvaluationScore[]> = {
     { criteria_id: "c6", criteria_name: "品質管理系統", category: "品質", weight: 15, score: 83, weighted_score: 12.45, notes: "品質系統待加強，SPC 覆蓋率 60%" },
     { criteria_id: "c8", criteria_name: "環保合規性",   category: "合規", weight: 10, score: 88, weighted_score: 8.8, notes: "環保合規，符合法規要求" },
   ],
-  // e8 — 精密封測服務 Q4-2024  total ≈ 80.20
+  // e7 — 精密封測服務 Q2-2026  total ≈ 83.45
+  e7: [
+    { criteria_id: "c1", criteria_name: "品質合格率",   category: "品質", weight: 30, score: 84, weighted_score: 25.2, notes: "Flip-Chip 良率提升至 99.1%，製程管制良好" },
+    { criteria_id: "c2", criteria_name: "交貨準時率",   category: "交期", weight: 25, score: 81, weighted_score: 20.25, notes: "交期較前季改善，準時交貨率 95.8%" },
+    { criteria_id: "c3", criteria_name: "價格競爭力",   category: "價格", weight: 20, score: 80, weighted_score: 16.0, notes: "議價幅度微幅提升，接近市場均價" },
+    { criteria_id: "c6", criteria_name: "品質管理系統", category: "品質", weight: 15, score: 88, weighted_score: 13.2, notes: "AEC-Q102 車規認證已通過審查並正式取得" },
+    { criteria_id: "c8", criteria_name: "環保合規性",   category: "合規", weight: 10, score: 88, weighted_score: 8.8, notes: "廢水與廢棄物申報皆符合環保署規範" },
+  ],
+  // e8 — 精密封測服務 Q1-2026  total ≈ 80.20
   e8: [
     { criteria_id: "c1", criteria_name: "品質合格率",   category: "品質", weight: 30, score: 82, weighted_score: 24.6, notes: "Flip-Chip 良率 98.6%，Burn-In 覆蓋率 85.3% 偏低" },
     { criteria_id: "c2", criteria_name: "交貨準時率",   category: "交期", weight: 25, score: 78, weighted_score: 19.5, notes: "準時交貨率 93.2%，部分急單延誤" },
@@ -286,7 +294,15 @@ export const EVALUATION_SCORES: Record<string, EvaluationScore[]> = {
     { criteria_id: "c6", criteria_name: "品質管理系統", category: "品質", weight: 15, score: 80, weighted_score: 12.0, notes: "AEC-Q102 認證取得中，尚未完成" },
     { criteria_id: "c8", criteria_name: "環保合規性",   category: "合規", weight: 10, score: 85, weighted_score: 8.5, notes: "廢水排放合規，符合環保法規" },
   ],
-  // e10 — 先進製程化學品 Q4-2024  total ≈ 65.40
+  // e9 — 先進製程化學品 Q2-2026  total ≈ 75.10
+  e9: [
+    { criteria_id: "c1", criteria_name: "品質合格率",   category: "品質", weight: 30, score: 74, weighted_score: 22.2, notes: "CMP 漿料批次均一性有提升，黏度偏差次數降低" },
+    { criteria_id: "c2", criteria_name: "交貨準時率",   category: "交期", weight: 25, score: 76, weighted_score: 19.0, notes: "準時交貨率回升至 92.5%，交期控制有改善" },
+    { criteria_id: "c3", criteria_name: "價格競爭力",   category: "價格", weight: 20, score: 73, weighted_score: 14.6, notes: "年降降價承諾部分履行，報價趨於合理" },
+    { criteria_id: "c6", criteria_name: "品質管理系統", category: "品質", weight: 15, score: 75, weighted_score: 11.25, notes: "SPC 管制導入率已提升至 70%，SOP 重新訓練完成" },
+    { criteria_id: "c8", criteria_name: "環保合規性",   category: "合規", weight: 10, score: 80.5, weighted_score: 8.05, notes: "廢液處理設施已更新，複查合格無異常" },
+  ],
+  // e10 — 先進製程化學品 Q1-2026  total ≈ 65.40
   e10: [
     { criteria_id: "c1", criteria_name: "品質合格率",   category: "品質", weight: 30, score: 60, weighted_score: 18.0, notes: "CMP漿料黏度偏差>±8%，超標3次，嚴重影響製程均一性" },
     { criteria_id: "c2", criteria_name: "交貨準時率",   category: "交期", weight: 25, score: 72, weighted_score: 18.0, notes: "準時交貨率 88%，缺貨 2 次影響產線" },

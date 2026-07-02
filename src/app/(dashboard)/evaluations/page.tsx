@@ -37,6 +37,15 @@ export default function EvaluationsPage() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
+      // 強制覆蓋重設內建 e7/e9 評鑑的狀態與得分快取，防舊快取殘留
+      localStorage.setItem("eval-status-e7", "approved");
+      localStorage.setItem("eval-status-e9", "approved");
+      
+      const e7Detail = { total_score: 83.45, tier: "B", updated_at: "2026-06-20T14:00:00Z" };
+      const e9Detail = { total_score: 75.10, tier: "C", updated_at: "2026-06-25T14:00:00Z" };
+      localStorage.setItem("eval-detail-e7", JSON.stringify(e7Detail));
+      localStorage.setItem("eval-detail-e9", JSON.stringify(e9Detail));
+
       let updated = false;
       EVALUATIONS.forEach((e) => {
         const savedStatus = localStorage.getItem(`eval-status-${e.id}`);
