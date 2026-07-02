@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { SCARS } from "@/lib/mock-data";
+import { SCARS, SUPPLIERS } from "@/lib/mock-data";
 import { getScarStatusColor, getTierColor, formatDate, scoreColor } from "@/lib/utils";
 import { SCAR_STATUS_LABELS, TIER_LABELS } from "@/types";
 import type { ScarStatus } from "@/types";
@@ -32,8 +32,56 @@ function AccessDenied() {
 export default function ScarPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const [scars, setScars] = useState(SCARS);
   const [statusFilter, setStatusFilter] = useState<ScarStatus | "ALL">("ALL");
   const [search, setSearch] = useState("");
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  const [newScar, setNewScar] = useState({
+    scar_number: "",
+    supplier_id: "",
+    issue_description: "",
+    category: "品質",
+    root_cause: "",
+    corrective_action: "",
+    target_date: "2026-06-30",
+    status: "open" as ScarStatus,
+  });
+
+  // 自動產生 SCAR 編號
+  useEffect(() => {
+    if (showAddModal) {
+      setNewScar(prev => ({
+        ...prev,
+        scar_number: `SCAR-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+        supplier_id: SUPPLIERS[0]?.id || "",
+      }));
+    }
+  }, [showAddModal]);
+
+  function handleAddScar(e: React.FormEvent) {
+    e.preventDefault();
+    const supplier = SUPPLIERS.find(s => s.id === newScar.supplier_id);
+    if (!supplier) {
+      alert("請選擇供應商");
+      return;
+    }
+    const scarToAdd = {
+      id: `scar-${Date.now()}`,
+      supplier_name: supplier.name,
+      supplier_code: supplier.code,
+      triggered_score: 80,
+      triggered_tier: supplier.tier,
+      evaluation_id: "",
+      verified_date: null,
+      created_by: user?.id || "u1",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      ...newScar,
+    };
+    setScars(prev => [scarToAdd, ...prev]);
+    setShowAddModal(false);
+  }
 
   useEffect(() => {
     if (user && !["super_admin", "admin", "manager", "viewer"].includes(user.role)) {
@@ -47,18 +95,18 @@ export default function ScarPage() {
 
   const canExport = user && ["super_admin", "admin", "manager"].includes(user.role);
 
-  const filtered = SCARS.filter((sc) => {
+  const filtered = scars.filter((sc) => {
     const matchStatus = statusFilter === "ALL" || sc.status === statusFilter;
     const matchSearch =
       !search ||
-      sc.scar_number.includes(search) ||
-      sc.supplier_name.includes(search) ||
-      sc.issue_description.includes(search);
+      sc.scar_number.toLowerCase().includes(search.toLowerCase()) ||
+      sc.supplier_name.toLowerCase().includes(search.toLowerCase()) ||
+      sc.issue_description.toLowerCase().includes(search.toLowerCase());
     return matchStatus && matchSearch;
   });
 
-  const counts: Record<string, number> = { ALL: SCARS.length };
-  SCARS.forEach((sc) => { counts[sc.status] = (counts[sc.status] ?? 0) + 1; });
+  const counts: Record<string, number> = { ALL: scars.length };
+  scars.forEach((sc) => { counts[sc.status] = (counts[sc.status] ?? 0) + 1; });
 
   // Days remaining / overdue
   function daysInfo(targetDate: string, status: ScarStatus) {
@@ -84,7 +132,7 @@ export default function ScarPage() {
             <button className="ev-btn ev-btn-ghost" onClick={() => exportScarsToExcel(filtered)}>
               <i className="bi bi-file-earmark-excel" /> 匯出 Excel
             </button>
-            <button className="ev-btn ev-btn-primary">
+            <button className="ev-btn ev-btn-primary" onClick={() => setShowAddModal(true)}>
               <i className="bi bi-plus-lg" /> 新增 SCAR
             </button>
           </div>
@@ -281,6 +329,109 @@ export default function ScarPage() {
           </div>
         )}
       </div>
+
+      {showAddModal && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+          backgroundColor: "rgba(30,58,95,0.4)", backdropFilter: "blur(4px)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+        }}>
+          <div className="ev-card" style={{
+            width: "100%", maxWidth: 640, maxHeight: "90vh", overflowY: "auto",
+            padding: 24, boxShadow: "0 10px 30px rgba(30,58,95,0.15)",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#1E3A5F" }}>開立 SCAR 矯正要求</div>
+              <button 
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                style={{ background: "none", border: "none", color: "#94AEC8", fontSize: "1.2rem", cursor: "pointer" }}
+              >
+                <i className="bi bi-x-lg" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddScar}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 18 }}>
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>SCAR 編號 *</label>
+                  <input 
+                    className="ev-input" style={{ width: "100%" }} required
+                    value={newScar.scar_number} onChange={(e) => setNewScar({...newScar, scar_number: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>供應商 *</label>
+                  <select 
+                    className="ev-select" style={{ width: "100%" }}
+                    value={newScar.supplier_id} onChange={(e) => setNewScar({...newScar, supplier_id: e.target.value})}
+                  >
+                    {SUPPLIERS.map((s) => (
+                      <option key={s.id} value={s.id}>{s.code}　{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>問題類別 *</label>
+                  <select 
+                    className="ev-select" style={{ width: "100%" }}
+                    value={newScar.category} onChange={(e) => setNewScar({...newScar, category: e.target.value})}
+                  >
+                    {["品質", "交期", "價格", "服務", "技術", "財務", "合規"].map((c) => (
+                      <option key={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>狀態 *</label>
+                  <select 
+                    className="ev-select" style={{ width: "100%" }}
+                    value={newScar.status} onChange={(e) => setNewScar({...newScar, status: e.target.value as ScarStatus})}
+                  >
+                    <option value="open">待處理 (Open)</option>
+                    <option value="in_progress">改善中 (In Progress)</option>
+                    <option value="verified">已驗證 (Verified)</option>
+                    <option value="closed">已結案 (Closed)</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>預計改善完成日 *</label>
+                  <input 
+                    type="date" className="ev-input" style={{ width: "100%" }} required
+                    value={newScar.target_date} onChange={(e) => setNewScar({...newScar, target_date: e.target.value})}
+                  />
+                </div>
+                <div style={{ gridColumn: "span 2" }}>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>問題描述 *</label>
+                  <textarea 
+                    className="ev-input" style={{ width: "100%", height: 60, resize: "none", fontFamily: "inherit" }} required
+                    value={newScar.issue_description} onChange={(e) => setNewScar({...newScar, issue_description: e.target.value})}
+                  />
+                </div>
+                <div style={{ gridColumn: "span 2" }}>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>原因分析 (Root Cause)</label>
+                  <textarea 
+                    className="ev-input" style={{ width: "100%", height: 60, resize: "none", fontFamily: "inherit" }}
+                    value={newScar.root_cause} onChange={(e) => setNewScar({...newScar, root_cause: e.target.value})}
+                  />
+                </div>
+                <div style={{ gridColumn: "span 2" }}>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>矯正與預防措施 (Corrective Actions)</label>
+                  <textarea 
+                    className="ev-input" style={{ width: "100%", height: 60, resize: "none", fontFamily: "inherit" }}
+                    value={newScar.corrective_action} onChange={(e) => setNewScar({...newScar, corrective_action: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", borderTop: "1px solid #EAF1FB", paddingTop: 16 }}>
+                <button type="button" className="ev-btn ev-btn-ghost" onClick={() => setShowAddModal(false)}>取消</button>
+                <button type="submit" className="ev-btn ev-btn-primary">確認開立</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
