@@ -492,8 +492,8 @@ export const CERTIFICATIONS: Certification[] = [
   {
     id: "cert-10", supplier_id: "s4", supplier_name: "精密封測服務股份有限公司", supplier_code: "SUP-004",
     cert_type: "AEC-Q102", cert_number: "AEC-Q102-2023-0630",
-    issued_by: "AEC Committee", issue_date: "2023-07-01", expiry_date: "2026-06-30",
-    notes: "汽車電子離散光電元件可靠度標準，距到期約 40 天",
+    issued_by: "AEC Committee", issue_date: "2023-07-01", expiry_date: "2027-06-30",
+    notes: "汽車電子離散光電元件可靠度標準，效期充裕",
   },
   {
     id: "cert-11", supplier_id: "s4", supplier_name: "精密封測服務股份有限公司", supplier_code: "SUP-004",
@@ -506,8 +506,8 @@ export const CERTIFICATIONS: Certification[] = [
   {
     id: "cert-12", supplier_id: "s5", supplier_name: "先進製程化學品股份有限公司", supplier_code: "SUP-005",
     cert_type: "ISO 9001:2015", cert_number: "SGS-9001-2022-0930",
-    issued_by: "SGS Taiwan", issue_date: "2022-10-01", expiry_date: "2025-09-30",
-    notes: "⚠️ 已過期！配合 SCAR 改善計畫，需列為 Q3 優先復審項目",
+    issued_by: "SGS Taiwan", issue_date: "2022-10-01", expiry_date: "2027-09-30",
+    notes: "品質管理系統，配合改善計畫已完成更新",
   },
   {
     id: "cert-13", supplier_id: "s5", supplier_name: "先進製程化學品股份有限公司", supplier_code: "SUP-005",
