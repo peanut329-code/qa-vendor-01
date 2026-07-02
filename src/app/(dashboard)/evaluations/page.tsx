@@ -33,6 +33,23 @@ export default function EvaluationsPage() {
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<EvaluationStatus | "ALL">("ALL");
   const [search, setSearch] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      let updated = false;
+      EVALUATIONS.forEach((e) => {
+        const saved = localStorage.getItem(`eval-status-${e.id}`);
+        if (saved && e.status !== saved) {
+          e.status = saved as any;
+          updated = true;
+        }
+      });
+      if (updated) {
+        setRefreshKey((prev) => prev + 1);
+      }
+    }
+  }, []);
 
   const canCreate = user && ["super_admin", "admin", "manager", "evaluator"].includes(user.role);
   const canReview = user && ["super_admin", "admin", "manager"].includes(user.role);

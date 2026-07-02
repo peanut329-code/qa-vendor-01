@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -21,6 +21,26 @@ export default function EvaluationDetailPage({ params }: { params: Promise<{ id:
 
   const ev = EVALUATIONS.find((e) => e.id === id);
   const scores = EVALUATION_SCORES[id] ?? [];
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && ev) {
+      const saved = localStorage.getItem(`eval-status-${id}`);
+      if (saved) {
+        setStatus(saved);
+        ev.status = saved as any;
+      }
+    }
+  }, [id, ev]);
+
+  function handleStatusChange(newStatus: string) {
+    setStatus(newStatus);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`eval-status-${id}`, newStatus);
+    }
+    if (ev) {
+      ev.status = newStatus as any;
+    }
+  }
 
   if (!ev) {
     return (
@@ -78,14 +98,14 @@ export default function EvaluationDetailPage({ params }: { params: Promise<{ id:
               <button
                 className="ev-btn ev-btn-primary"
                 style={{ background: "#22C55E", borderColor: "#22C55E" }}
-                onClick={() => setStatus("approved")}
+                onClick={() => handleStatusChange("approved")}
               >
                 <i className="bi bi-shield-check" /> 核准
               </button>
               <button
                 className="ev-btn"
                 style={{ background: "#EF4444", borderColor: "#EF4444", color: "white" }}
-                onClick={() => setStatus("rejected")}
+                onClick={() => handleStatusChange("rejected")}
               >
                 <i className="bi bi-x-circle" /> 退回
               </button>
@@ -107,7 +127,7 @@ export default function EvaluationDetailPage({ params }: { params: Promise<{ id:
           }}
         >
           <i className={`bi ${status === "approved" ? "bi-check-circle-fill" : "bi-x-circle-fill"}`} />
-          評鑑已{status === "approved" ? "核准" : "退回"}（Demo 模式，重新整理後恢復）
+          評鑑已{status === "approved" ? "核准" : "退回"}
         </div>
       )}
 
