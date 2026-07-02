@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
@@ -37,16 +38,55 @@ export default function Sidebar() {
   const { user, logout } = useAuth();
   const role = user?.role as UserRole | undefined;
 
+  const [scarCount, setScarCount] = useState(3);
+  const [certCount, setCertCount] = useState(3);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // 1. SCAR 待處理數
+      const savedScars = localStorage.getItem("scars-custom");
+      let currentScars = [...SCARS];
+      if (savedScars) {
+        try {
+          const parsed = JSON.parse(savedScars);
+          currentScars = [...SCARS, ...parsed];
+        } catch (e) {}
+      }
+      const activeScars = currentScars.filter((s) => s.status !== "closed").length;
+      setScarCount(activeScars);
+
+      // 2. 認證效期異常數
+      const savedCerts = localStorage.getItem("certifications-custom");
+      let currentCerts = [...CERTIFICATIONS];
+      if (savedCerts) {
+        try {
+          const parsed = JSON.parse(savedCerts);
+          currentCerts = [...CERTIFICATIONS, ...parsed];
+        } catch (e) {}
+      }
+      const TODAY = "2026-05-21";
+      const todayTime = new Date(TODAY).getTime();
+      const warningDays = 30 * 24 * 60 * 60 * 1000; // 30天
+      
+      const abnormalCount = currentCerts.filter((c) => {
+        const expTime = new Date(c.expiry_date).getTime();
+        return expTime < todayTime || (expTime - todayTime) <= warningDays;
+      }).length;
+
+      setCertCount(abnormalCount);
+    }
+  }, [pathname]);
+
   function isActive(href: string) {
     return pathname === href || pathname.startsWith(href + "/");
   }
 
   const visibleNav = NAV_ITEMS.filter((item) => role && item.allowedRoles.includes(role)).map((item) => {
     if (item.href === "/scar") {
-      return { ...item, badge: SCARS.length };
+      return { ...item, badge: scarCount };
     }
     if (item.href === "/certifications") {
-      return { ...item, badge: CERTIFICATIONS.length };
+      return { ...item, badge: certCount };
     }
     return item;
   });
