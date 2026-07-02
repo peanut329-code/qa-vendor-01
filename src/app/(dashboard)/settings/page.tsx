@@ -19,17 +19,50 @@ export default function SettingsPage() {
   });
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+  const [companyInfo, setCompanyInfo] = useState({
+    name: "範例科技股份有限公司",
+    tax_id: "12345678",
+    period: "季評鑑（每季一次）",
+    admin: "陳志明",
+    phone: "02-2345-6789",
+    email: "admin@example.com",
+    address: "台北市信義區忠孝東路五段 150 號 8 樓",
+  });
+
+  const [notifications, setNotifications] = useState<Record<string, boolean>>({
+    "評鑑到期提醒": true,
+    "新評鑑指派通知": true,
+    "審核結果通知": true,
+    "供應商等級變更提醒": false,
+    "月報表自動發送": false,
+    "D 級供應商警示": true,
+  });
+
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("settings-criteria");
-      if (saved) {
+      const savedCriteria = localStorage.getItem("settings-criteria");
+      if (savedCriteria) {
         try {
-          setCriteriaList(JSON.parse(saved));
+          setCriteriaList(JSON.parse(savedCriteria));
         } catch (e) {
           setCriteriaList(CRITERIA);
         }
       } else {
         setCriteriaList(CRITERIA);
+      }
+
+      const savedCompany = localStorage.getItem("settings-company");
+      if (savedCompany) {
+        try {
+          setCompanyInfo(JSON.parse(savedCompany));
+        } catch (e) {}
+      }
+
+      const savedNotifications = localStorage.getItem("settings-notifications");
+      if (savedNotifications) {
+        try {
+          setNotifications(JSON.parse(savedNotifications));
+        } catch (e) {}
       }
     }
   }, []);
@@ -39,6 +72,8 @@ export default function SettingsPage() {
   function handleSaveSettings() {
     if (typeof window !== "undefined") {
       localStorage.setItem("settings-criteria", JSON.stringify(criteriaList));
+      localStorage.setItem("settings-company", JSON.stringify(companyInfo));
+      localStorage.setItem("settings-notifications", JSON.stringify(notifications));
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     }
@@ -122,45 +157,43 @@ export default function SettingsPage() {
                 background: activeTab === tab.key ? "#EDF3FA" : "transparent",
                 color: activeTab === tab.key ? "#5B8FD9" : "#5F7A9B",
                 fontWeight: activeTab === tab.key ? 600 : 500,
-                fontSize: "0.855rem",
-                cursor: "pointer",
+                fontSize: "0.85rem",
                 textAlign: "left",
-                marginBottom: 2,
-                transition: "all 0.15s",
+                cursor: "pointer",
+                marginBottom: 4,
               }}
             >
-              <i className={`bi ${tab.icon}`} style={{ fontSize: "0.9rem" }} />
+              <i className={`bi ${tab.icon}`} />
               {tab.label}
             </button>
           ))}
         </div>
 
-        {/* Tab content */}
-        <div>
+        {/* Tab Content */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
           {activeTab === "criteria" && (
             <div>
-              {/* Weight summary */}
               <div
-                className="ev-card"
+                className={`status-banner ${totalWeight === 100 ? "success" : "warning"}`}
                 style={{
-                  padding: "14px 18px",
+                  padding: "12px 18px",
+                  borderRadius: 10,
                   marginBottom: 16,
                   display: "flex",
                   alignItems: "center",
-                  gap: 12,
-                  background: totalWeight === 100 ? "#ECFDF5" : "#FEF3C7",
-                  border: `1px solid ${totalWeight === 100 ? "#A7F3D0" : "#FCD34D"}`,
+                  gap: 10,
+                  background: totalWeight === 100 ? "#ECFDF5" : "#FFFBEB",
+                  border: `1.5px solid ${totalWeight === 100 ? "#10B981" : "#F59E0B"}`,
                 }}
               >
                 <i
-                  className={`bi ${totalWeight === 100 ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill"}`}
-                  style={{ color: totalWeight === 100 ? "#22C55E" : "#F59E0B", fontSize: "1.1rem" }}
+                  className={`bi ${totalWeight === 100 ? "bi-check-circle-fill text-emerald-500" : "bi-exclamation-triangle-fill text-amber-500"}`}
                 />
                 <div>
-                  <span style={{ fontWeight: 600, fontSize: "0.875rem", color: totalWeight === 100 ? "#166534" : "#92400E" }}>
-                    總權重：{totalWeight}%
+                  <span style={{ fontSize: "0.9rem", fontWeight: 700, color: totalWeight === 100 ? "#065F46" : "#78350F" }}>
+                    總權重：{totalWeight}%{" "}
                   </span>
-                  <span style={{ fontSize: "0.8rem", color: totalWeight === 100 ? "#15803D" : "#B45309", marginLeft: 8 }}>
+                  <span style={{ fontSize: "0.82rem", color: totalWeight === 100 ? "#047857" : "#B45309" }}>
                     {totalWeight === 100 ? "配置正確，所有指標總和等於 100%" : "請調整各指標權重，確保總和為 100%"}
                   </span>
                 </div>
@@ -230,24 +263,18 @@ export default function SettingsPage() {
                           {c.description}
                         </td>
                         <td>
-                          {c.is_active ? (
-                            <span className="ev-badge bg-emerald-100 text-emerald-700">
-                              <span className="ev-badge-dot bg-emerald-500" />
-                              啟用
-                            </span>
-                          ) : (
-                            <span className="ev-badge bg-gray-100 text-gray-500">停用</span>
-                          )}
+                          <span className="ev-badge" style={{ backgroundColor: "#D1FAE5", color: "#065F46" }}>
+                            {c.is_active ? "使用中" : "停用"}
+                          </span>
                         </td>
                         <td>
-                          <div style={{ display: "flex", gap: 4 }}>
-                            <button className="ev-btn ev-btn-secondary" style={{ padding: "4px 10px", fontSize: "0.78rem" }}>
-                              <i className="bi bi-pencil" />
-                            </button>
-                            <button className="ev-btn ev-btn-danger" onClick={() => handleDeleteCriteria(c.id)} style={{ padding: "4px 10px", fontSize: "0.78rem" }}>
-                              <i className="bi bi-trash" />
-                            </button>
-                          </div>
+                          <button 
+                            className="ev-btn ev-btn-danger" 
+                            onClick={() => handleDeleteCriteria(c.id)} 
+                            style={{ padding: "4px 10px", fontSize: "0.78rem" }}
+                          >
+                            <i className="bi bi-trash" />
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -261,30 +288,63 @@ export default function SettingsPage() {
             <div className="ev-card" style={{ padding: "24px" }}>
               <div style={{ fontWeight: 700, color: "#1E3A5F", fontSize: "0.95rem", marginBottom: 20 }}>公司基本資料</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
-                {[
-                  { label: "公司名稱", placeholder: "請輸入公司全名", defaultValue: "範例科技股份有限公司" },
-                  { label: "統一編號", placeholder: "請輸入統一編號", defaultValue: "12345678" },
-                  { label: "評鑑週期", placeholder: "例：季評鑑", defaultValue: "季評鑑（每季一次）" },
-                  { label: "系統管理員", placeholder: "管理員姓名", defaultValue: "陳志明" },
-                  { label: "聯絡電話", placeholder: "02-xxxx-xxxx", defaultValue: "02-2345-6789" },
-                  { label: "電子郵件", placeholder: "admin@company.com", defaultValue: "admin@example.com" },
-                ].map((field) => (
-                  <div key={field.label}>
-                    <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#5F7A9B", display: "block", marginBottom: 6 }}>
-                      {field.label}
-                    </label>
-                    <input
-                      className="ev-input"
-                      placeholder={field.placeholder}
-                      defaultValue={field.defaultValue}
-                    />
-                  </div>
-                ))}
+                <div>
+                  <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#5F7A9B", display: "block", marginBottom: 6 }}>公司名稱</label>
+                  <input
+                    className="ev-input"
+                    value={companyInfo.name}
+                    onChange={(e) => setCompanyInfo({...companyInfo, name: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#5F7A9B", display: "block", marginBottom: 6 }}>統一編號</label>
+                  <input
+                    className="ev-input"
+                    value={companyInfo.tax_id}
+                    onChange={(e) => setCompanyInfo({...companyInfo, tax_id: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#5F7A9B", display: "block", marginBottom: 6 }}>評鑑週期</label>
+                  <input
+                    className="ev-input"
+                    value={companyInfo.period}
+                    onChange={(e) => setCompanyInfo({...companyInfo, period: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#5F7A9B", display: "block", marginBottom: 6 }}>系統管理員</label>
+                  <input
+                    className="ev-input"
+                    value={companyInfo.admin}
+                    onChange={(e) => setCompanyInfo({...companyInfo, admin: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#5F7A9B", display: "block", marginBottom: 6 }}>聯絡電話</label>
+                  <input
+                    className="ev-input"
+                    value={companyInfo.phone}
+                    onChange={(e) => setCompanyInfo({...companyInfo, phone: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#5F7A9B", display: "block", marginBottom: 6 }}>電子郵件</label>
+                  <input
+                    className="ev-input"
+                    value={companyInfo.email}
+                    onChange={(e) => setCompanyInfo({...companyInfo, email: e.target.value})}
+                  />
+                </div>
                 <div style={{ gridColumn: "1 / -1" }}>
                   <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#5F7A9B", display: "block", marginBottom: 6 }}>
                     公司地址
                   </label>
-                  <input className="ev-input" defaultValue="台北市信義區忠孝東路五段 150 號 8 樓" />
+                  <input 
+                    className="ev-input" 
+                    value={companyInfo.address}
+                    onChange={(e) => setCompanyInfo({...companyInfo, address: e.target.value})}
+                  />
                 </div>
               </div>
             </div>
@@ -295,65 +355,73 @@ export default function SettingsPage() {
               <div style={{ fontWeight: 700, color: "#1E3A5F", fontSize: "0.95rem", marginBottom: 20 }}>通知設定</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 {[
-                  { label: "評鑑到期提醒", sub: "在評鑑截止日 7 天前發送提醒通知", checked: true },
-                  { label: "新評鑑指派通知", sub: "當有新評鑑指派給您時，立即發送通知", checked: true },
-                  { label: "審核結果通知", sub: "評鑑審核完成後通知評鑑人員", checked: true },
-                  { label: "供應商等級變更提醒", sub: "供應商等級升降時發送主管通知", checked: false },
-                  { label: "月報表自動發送", sub: "每月 1 日自動寄送上月彙整報表", checked: false },
-                  { label: "D 級供應商警示", sub: "有供應商跌至 D 級時發送緊急通知", checked: true },
-                ].map((item) => (
-                  <div
-                    key={item.label}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "14px 16px",
-                      background: "#F8FBFF",
-                      border: "1px solid #EAF1FB",
-                      borderRadius: 10,
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: "0.875rem", color: "#1E3A5F" }}>{item.label}</div>
-                      <div style={{ fontSize: "0.78rem", color: "#5F7A9B", marginTop: 2 }}>{item.sub}</div>
-                    </div>
-                    <label
+                  { label: "評鑑到期提醒", sub: "在評鑑截止日 7 天前發送提醒通知" },
+                  { label: "新評鑑指派通知", sub: "當有新評鑑指派給您時，立即發送通知" },
+                  { label: "審核結果通知", sub: "評鑑審核完成後通知評鑑人員" },
+                  { label: "供應商等級變更提醒", sub: "供應商等級升降時發送主管通知" },
+                  { label: "月報表自動發送", sub: "每月 1 日自動寄送上月彙整報表" },
+                  { label: "D 級供應商警示", sub: "有供應商跌至 D 級時發送緊急通知" },
+                ].map((item) => {
+                  const checked = notifications[item.label] ?? false;
+                  return (
+                    <div
+                      key={item.label}
                       style={{
-                        position: "relative",
-                        width: 40,
-                        height: 22,
-                        cursor: "pointer",
-                        flexShrink: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "14px 16px",
+                        background: "#F8FBFF",
+                        border: "1px solid #EAF1FB",
+                        borderRadius: 10,
                       }}
                     >
-                      <input type="checkbox" defaultChecked={item.checked} style={{ opacity: 0, width: 0, height: 0 }} />
-                      <span
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: "0.875rem", color: "#1E3A5F" }}>{item.label}</div>
+                        <div style={{ fontSize: "0.78rem", color: "#5F7A9B", marginTop: 2 }}>{item.sub}</div>
+                      </div>
+                      <label
                         style={{
-                          position: "absolute",
-                          inset: 0,
-                          borderRadius: 11,
-                          background: item.checked ? "#5B8FD9" : "#C5D8F0",
-                          transition: "background 0.2s",
+                          position: "relative",
+                          width: 40,
+                          height: 22,
+                          cursor: "pointer",
+                          flexShrink: 0,
                         }}
                       >
+                        <input 
+                          type="checkbox" 
+                          checked={checked} 
+                          onChange={(e) => setNotifications({...notifications, [item.label]: e.target.checked})}
+                          style={{ opacity: 0, width: 0, height: 0 }} 
+                        />
                         <span
                           style={{
                             position: "absolute",
-                            width: 16,
-                            height: 16,
-                            borderRadius: "50%",
-                            background: "white",
-                            top: 3,
-                            left: item.checked ? 21 : 3,
-                            transition: "left 0.2s",
-                            boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                            inset: 0,
+                            borderRadius: 11,
+                            background: checked ? "#5B8FD9" : "#C5D8F0",
+                            transition: "background 0.2s",
                           }}
-                        />
-                      </span>
-                    </label>
-                  </div>
-                ))}
+                        >
+                          <span
+                            style={{
+                              position: "absolute",
+                              width: 16,
+                              height: 16,
+                              borderRadius: "50%",
+                              background: "white",
+                              top: 3,
+                              left: checked ? 21 : 3,
+                              transition: "left 0.2s",
+                              boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                            }}
+                          />
+                        </span>
+                      </label>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
