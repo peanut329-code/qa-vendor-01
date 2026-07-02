@@ -355,7 +355,7 @@ export default function SettingsPage() {
               <div style={{ fontWeight: 700, color: "#1E3A5F", fontSize: "0.95rem", marginBottom: 20 }}>通知設定</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 {[
-                  { label: "評鑑到期提醒", sub: "在評鑑截止日 7 天前發送提醒通知" },
+                  { label: "評鑑到期提醒", sub: "在評鑑截止日 7 天和前 14 天發送提醒通知" },
                   { label: "新評鑑指派通知", sub: "當有新評鑑指派給您時，立即發送通知" },
                   { label: "審核結果通知", sub: "評鑑審核完成後通知評鑑人員" },
                   { label: "供應商等級變更提醒", sub: "供應商等級升降時發送主管通知" },

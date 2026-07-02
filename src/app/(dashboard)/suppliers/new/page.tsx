@@ -77,6 +77,36 @@ export default function NewSupplierPage() {
     if (!validate()) return;
     setSubmitting(true);
     await new Promise((r) => setTimeout(r, 800));
+    
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("suppliers-custom");
+      let current: any[] = [];
+      if (saved) {
+        try {
+          current = JSON.parse(saved);
+        } catch (e) {}
+      }
+      
+      const newSup = {
+        id: `s-${Date.now()}`,
+        code: form.code,
+        name: form.name,
+        category: form.category,
+        tier: form.tier,
+        status: form.status,
+        overall_score: form.tier === "A" ? 95 : form.tier === "B" ? 82 : form.tier === "C" ? 65 : 42,
+        created_at: new Date().toISOString().split('T')[0],
+        contact_name: form.contact_name,
+        contact_email: form.contact_email,
+        contact_phone: form.contact_phone,
+        address: form.address,
+        notes: form.notes
+      };
+
+      current.push(newSup);
+      localStorage.setItem("suppliers-custom", JSON.stringify(current));
+    }
+    
     setSubmitting(false);
     setSubmitted(true);
   }

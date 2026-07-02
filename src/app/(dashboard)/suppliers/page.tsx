@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { SUPPLIERS, EVALUATIONS } from "@/lib/mock-data";
@@ -24,25 +24,39 @@ export default function SuppliersPage() {
   const [tab, setTab]           = useState<TierTab>("ALL");
   const [search, setSearch]     = useState("");
   const [catFilter, setCatFilter] = useState("全部");
+  const [suppliersList, setSuppliersList] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("suppliers-custom");
+      let custom: any[] = [];
+      if (saved) {
+        try {
+          custom = JSON.parse(saved);
+        } catch (e) {}
+      }
+      setSuppliersList([...SUPPLIERS, ...custom]);
+    }
+  }, []);
 
   const canEdit = user && ["super_admin", "admin"].includes(user.role);
 
   const tierCounts = {
-    A: SUPPLIERS.filter((s) => s.tier === "A").length,
-    B: SUPPLIERS.filter((s) => s.tier === "B").length,
-    C: SUPPLIERS.filter((s) => s.tier === "C").length,
-    D: SUPPLIERS.filter((s) => s.tier === "D").length,
+    A: suppliersList.filter((s) => s.tier === "A").length,
+    B: suppliersList.filter((s) => s.tier === "B").length,
+    C: suppliersList.filter((s) => s.tier === "C").length,
+    D: suppliersList.filter((s) => s.tier === "D").length,
   };
 
   const TABS: { key: TierTab; label: string; count: number }[] = [
-    { key: "ALL", label: "全部",        count: SUPPLIERS.length },
+    { key: "ALL", label: "全部",        count: suppliersList.length },
     { key: "A",   label: "A 級",        count: tierCounts.A },
     { key: "B",   label: "B 級",        count: tierCounts.B },
     { key: "C",   label: "C 級 / 觀察", count: tierCounts.C },
     { key: "D",   label: "D 級 / 不合格", count: tierCounts.D },
   ];
 
-  const filtered = SUPPLIERS.filter((s) => {
+  const filtered = suppliersList.filter((s) => {
     const matchTab = tab === "ALL" || s.tier === tab;
     const matchSearch = !search || s.name.includes(search) || s.code.includes(search);
     const matchCat = catFilter === "全部" || s.category === catFilter;
@@ -55,7 +69,7 @@ export default function SuppliersPage() {
       <div className="page-header">
         <div>
           <div className="page-title">供應商管理</div>
-          <div className="page-subtitle">共 {SUPPLIERS.length} 家供應商，{SUPPLIERS.filter((s) => s.status === "active").length} 家正常合作中</div>
+          <div className="page-subtitle">共 {suppliersList.length} 家供應商，{suppliersList.filter((s) => s.status === "active").length} 家正常合作中</div>
         </div>
         {canEdit && (
           <div style={{ display: "flex", gap: 8 }}>
@@ -116,7 +130,7 @@ export default function SuppliersPage() {
         </select>
         <div style={{ flex: 1 }} />
         <span style={{ fontFamily: "var(--font-mono)", color: "var(--text-dim)", fontSize: "0.85rem" }}>
-          顯示 {filtered.length} / {SUPPLIERS.length} 筆
+          顯示 {filtered.length} / {suppliersList.length} 筆
         </span>
       </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -9,6 +9,7 @@ import {
 import { SUPPLIERS, EVALUATIONS, SCARS } from "@/lib/mock-data";
 import { getTierColor, getEvalStatusColor, getSupplierStatusColor, getScarStatusColor, formatDate, scoreColor } from "@/lib/utils";
 import { TIER_LABELS, EVAL_STATUS_LABELS, STATUS_LABELS, SCAR_STATUS_LABELS } from "@/types";
+import type { Supplier } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { exportSuppliersToExcel } from "@/lib/export";
 
@@ -17,10 +18,36 @@ export default function SupplierDetailPage({ params }: { params: Promise<{ id: s
   const router = useRouter();
   const { user } = useAuth();
 
-  const supplier = SUPPLIERS.find((s) => s.id === id);
+  const [supplier, setSupplier] = useState<Supplier | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("suppliers-custom");
+      let custom: any[] = [];
+      if (saved) {
+        try {
+          custom = JSON.parse(saved);
+        } catch (e) {}
+      }
+      const all = [...SUPPLIERS, ...custom];
+      const found = all.find((s) => s.id === id);
+      setSupplier(found || null);
+      setLoading(false);
+    }
+  }, [id]);
+
   const supplierEvals = EVALUATIONS.filter((e) => e.supplier_id === id)
     .sort((a, b) => b.created_at.localeCompare(a.created_at));
   const supplierScars = SCARS.filter((sc) => sc.supplier_id === id);
+
+  if (loading) {
+    return (
+      <div style={{ textAlign: "center", padding: "80px 20px", color: "#5F7A9B" }}>
+        載入中...
+      </div>
+    );
+  }
 
   if (!supplier) {
     return (

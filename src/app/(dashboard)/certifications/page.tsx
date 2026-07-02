@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { CERTIFICATIONS } from "@/lib/mock-data";
+import { CERTIFICATIONS, SUPPLIERS } from "@/lib/mock-data";
 import { getCertStatus, getCertStatusColor, getDaysUntilExpiry, formatDate } from "@/lib/utils";
 import { CERT_STATUS_LABELS } from "@/types";
 import type { CertStatus } from "@/types";
@@ -30,11 +30,51 @@ export default function CertificationsPage() {
   const [supplierFilter, setSupplierFilter] = useState("全部");
   const [search, setSearch] = useState("");
 
+  const [certList, setCertList] = useState<any[]>([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [suppliersList, setSuppliersList] = useState<any[]>([]);
+
+  const [newCert, setNewCert] = useState({
+    supplier_id: "",
+    cert_type: "ISO 9001:2015",
+    cert_number: "",
+    issued_by: "",
+    issue_date: "",
+    expiry_date: "",
+    notes: "",
+  });
+
   useEffect(() => {
     if (user && !["super_admin", "admin", "manager", "viewer"].includes(user.role)) {
       router.replace("/dashboard");
     }
   }, [user, router]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedCerts = localStorage.getItem("certifications-custom");
+      let customCerts: any[] = [];
+      if (savedCerts) {
+        try {
+          customCerts = JSON.parse(savedCerts);
+        } catch (e) {}
+      }
+      setCertList([...CERTIFICATIONS, ...customCerts]);
+
+      const savedSups = localStorage.getItem("suppliers-custom");
+      let customSups: any[] = [];
+      if (savedSups) {
+        try {
+          customSups = JSON.parse(savedSups);
+        } catch (e) {}
+      }
+      const allSups = [...SUPPLIERS, ...customSups];
+      setSuppliersList(allSups);
+      if (allSups.length > 0) {
+        setNewCert((prev) => ({ ...prev, supplier_id: allSups[0].id }));
+      }
+    }
+  }, []);
 
   if (!user || !["super_admin", "admin", "manager", "viewer"].includes(user.role)) {
     return <AccessDenied />;
@@ -44,23 +84,64 @@ export default function CertificationsPage() {
 
   // Compute statuses
   const certsWithStatus = useMemo(
-    () => CERTIFICATIONS.map((c) => ({ ...c, status: getCertStatus(c.expiry_date), days: getDaysUntilExpiry(c.expiry_date) })),
-    []
+    () => certList.map((c) => ({ ...c, status: getCertStatus(c.expiry_date), days: getDaysUntilExpiry(c.expiry_date) })),
+    [certList]
   );
 
   const expiredCount = certsWithStatus.filter((c) => c.status === "expired").length;
   const expiringSoonCount = certsWithStatus.filter((c) => c.status === "expiring_soon").length;
-  const validCount = certsWithStatus.filter((c) => c.status === "valid").length;
 
-  const supplierNames = ["全部", ...Array.from(new Set(CERTIFICATIONS.map((c) => c.supplier_name)))];
+  const supplierNames = ["全部", ...Array.from(new Set(certList.map((c) => c.supplier_name)))];
 
   const filtered = certsWithStatus.filter((c) => {
     const matchStatus = statusFilter === "ALL" || c.status === statusFilter;
     const matchType = typeFilter === "全部" || c.cert_type === typeFilter;
     const matchSupplier = supplierFilter === "全部" || c.supplier_name === supplierFilter;
-    const matchSearch = !search || c.cert_type.includes(search) || c.supplier_name.includes(search) || c.cert_number.includes(search);
+    const matchSearch = !search || c.cert_type.toLowerCase().includes(search.toLowerCase()) || c.supplier_name.toLowerCase().includes(search.toLowerCase()) || c.cert_number.toLowerCase().includes(search.toLowerCase());
     return matchStatus && matchType && matchSupplier && matchSearch;
   });
+
+  function handleAddCert(e: React.FormEvent) {
+    e.preventDefault();
+    const targetSup = suppliersList.find((s) => s.id === newCert.supplier_id);
+    if (!targetSup) return;
+
+    const itemToAdd = {
+      id: `cert-${Date.now()}`,
+      supplier_id: targetSup.id,
+      supplier_name: targetSup.name,
+      supplier_code: targetSup.code,
+      cert_type: newCert.cert_type,
+      cert_number: newCert.cert_number,
+      issued_by: newCert.issued_by,
+      issue_date: newCert.issue_date,
+      expiry_date: newCert.expiry_date,
+      notes: newCert.notes,
+    };
+
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("certifications-custom");
+      let current: any[] = [];
+      if (saved) {
+        try {
+          current = JSON.parse(saved);
+        } catch (e) {}
+      }
+      current.push(itemToAdd);
+      localStorage.setItem("certifications-custom", JSON.stringify(current));
+    }
+
+    setCertList((prev) => [...prev, itemToAdd]);
+    setShowAddModal(false);
+    setNewCert((prev) => ({
+      ...prev,
+      cert_number: "",
+      issued_by: "",
+      issue_date: "",
+      expiry_date: "",
+      notes: "",
+    }));
+  }
 
   return (
     <div>
@@ -75,7 +156,7 @@ export default function CertificationsPage() {
             <button className="ev-btn ev-btn-ghost" onClick={() => exportCertificationsToExcel(filtered)}>
               <i className="bi bi-file-earmark-excel" /> Excel 匯出
             </button>
-            <button className="ev-btn ev-btn-primary">
+            <button className="ev-btn ev-btn-primary" onClick={() => setShowAddModal(true)}>
               <i className="bi bi-plus-lg" /> 新增認證
             </button>
           </div>
@@ -122,110 +203,83 @@ export default function CertificationsPage() {
         </div>
       )}
 
-      {/* Stats cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 20 }}>
-        {[
-          { key: "ALL" as const, label: "全部認證",   count: certsWithStatus.length, color: "#5B8FD9", bg: "#EDF3FA", icon: "bi-patch-check" },
-          { key: "valid" as CertStatus, label: "有效",      count: validCount,         color: "#22C55E", bg: "#F0FDF4", icon: "bi-check-circle-fill" },
-          { key: "expiring_soon" as CertStatus, label: "即將到期", count: expiringSoonCount, color: "#F59E0B", bg: "#FEF3C7", icon: "bi-clock-fill" },
-          { key: "expired" as CertStatus, label: "已過期",   count: expiredCount,       color: "#EF4444", bg: "#FEF2F2", icon: "bi-x-circle-fill" },
-        ].map(({ key, label, count, color, bg, icon }) => (
-          <button
-            key={key}
-            onClick={() => setStatusFilter(statusFilter === key ? "ALL" : key)}
-            style={{
-              background: statusFilter === key ? bg : "white",
-              border: `1.5px solid ${statusFilter === key ? color : "#E0EBF8"}`,
-              borderRadius: 12, padding: "14px 18px",
-              cursor: "pointer", textAlign: "left",
-              boxShadow: statusFilter === key ? `0 2px 10px ${color}20` : "0 1px 4px rgba(91,143,217,0.06)",
-              transition: "all 0.15s",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <span style={{ fontSize: "0.78rem", color: "#5F7A9B", fontWeight: 500 }}>{label}</span>
-              <div style={{ width: 28, height: 28, borderRadius: 8, background: bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <i className={`bi ${icon}`} style={{ color, fontSize: "0.85rem" }} />
-              </div>
+      {/* Filter bar */}
+      <div className="card" style={{ marginBottom: 14, padding: "16px 20px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1.5fr", gap: 12, alignItems: "center" }}>
+          <div>
+            <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>認證狀態</label>
+            <select
+              className="ev-select"
+              style={{ width: "100%" }}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+            >
+              <option value="ALL">全部狀態</option>
+              <option value="valid">有效</option>
+              <option value="expiring_soon">即將到期</option>
+              <option value="expired">已過期</option>
+            </select>
+          </div>
+          <div>
+            <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>認證類別</label>
+            <select
+              className="ev-select"
+              style={{ width: "100%" }}
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+            >
+              {CERT_TYPES.map((t) => (
+                <option key={t} value={t}>{t === "全部" ? "全部類別" : t}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>供應商</label>
+            <select
+              className="ev-select"
+              style={{ width: "100%" }}
+              value={supplierFilter}
+              onChange={(e) => setSupplierFilter(e.target.value)}
+            >
+              {supplierNames.map((n) => (
+                <option key={n} value={n}>{n === "全部" ? "全部供應商" : n}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>關鍵字搜尋</label>
+            <div style={{ position: "relative" }}>
+              <i className="bi bi-search" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94AEC8" }} />
+              <input
+                className="input"
+                style={{ width: "100%", paddingLeft: 34 }}
+                placeholder="搜尋證書編號 / 頒發機構..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
             </div>
-            <div style={{ fontSize: "1.8rem", fontWeight: 800, color }}>{count}</div>
-          </button>
-        ))}
-      </div>
-
-      {/* Filters + Table */}
-      <div className="ev-card" style={{ padding: 0, overflow: "hidden" }}>
-        {/* Filter bar */}
-        <div style={{ padding: "12px 18px", borderBottom: "1px solid #EAF1FB", background: "#FAFCFF", display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 180 }}>
-            <i className="bi bi-search" style={{ color: "#94AEC8", fontSize: "0.85rem" }} />
-            <input
-              className="ev-input"
-              placeholder="搜尋認證類別、供應商、編號..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{ border: "none", boxShadow: "none", padding: "4px 0" }}
-            />
-          </div>
-          <select
-            className="ev-select"
-            value={supplierFilter}
-            onChange={(e) => setSupplierFilter(e.target.value)}
-          >
-            {supplierNames.map((n) => (
-              <option key={n}>{n === "全部" ? "全部供應商" : n}</option>
-            ))}
-          </select>
-          <select
-            className="ev-select"
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-          >
-            {CERT_TYPES.map((t) => <option key={t}>{t === "全部" ? "全部認證類別" : t}</option>)}
-          </select>
-
-          {/* Status filter chips */}
-          <div style={{ display: "flex", gap: 6 }}>
-            {(["ALL", "valid", "expiring_soon", "expired"] as const).map((s) => {
-              const isActive = statusFilter === s;
-              const colorMap = { ALL: "#5B8FD9", valid: "#22C55E", expiring_soon: "#F59E0B", expired: "#EF4444" };
-              const labelMap = { ALL: "全部", valid: "有效", expiring_soon: "即將到期", expired: "已過期" };
-              return (
-                <button
-                  key={s}
-                  onClick={() => setStatusFilter(s)}
-                  style={{
-                    padding: "4px 12px", borderRadius: 9999, fontSize: "0.75rem", fontWeight: 600,
-                    border: `1.5px solid ${isActive ? colorMap[s] : "#E0EBF8"}`,
-                    background: isActive ? colorMap[s] : "white",
-                    color: isActive ? "white" : "#5F7A9B",
-                    cursor: "pointer", transition: "all 0.15s",
-                  }}
-                >
-                  {labelMap[s]}
-                </button>
-              );
-            })}
-          </div>
-
-          <div style={{ color: "#5F7A9B", fontSize: "0.82rem", whiteSpace: "nowrap" }}>
-            共 <strong style={{ color: "#1E3A5F" }}>{filtered.length}</strong> 筆
           </div>
         </div>
+      </div>
 
-        {/* Table */}
-        <div style={{ overflowX: "auto" }}>
-          <table className="ev-table">
+      {/* Table */}
+      <div className="card">
+        <div className="card-header">
+          <div className="card-header-title"><i className="bi bi-patch-check" /> 認證清單</div>
+          <div className="card-header-count">共 {filtered.length} 筆</div>
+        </div>
+        <div className="card-body p-0">
+          <table className="tbl">
             <thead>
               <tr>
-                <th>供應商</th>
-                <th>認證類別</th>
-                <th>認證編號</th>
-                <th>認證機構</th>
-                <th style={{ textAlign: "center" }}>核發日期</th>
-                <th style={{ textAlign: "center" }}>到期日期</th>
-                <th style={{ textAlign: "center" }}>剩餘天數</th>
-                <th>狀態</th>
+                <th>供應商名稱</th>
+                <th style={{ width: 140 }}>認證類別</th>
+                <th style={{ width: 150 }}>證書編號</th>
+                <th style={{ width: 130 }}>頒發機構</th>
+                <th style={{ width: 100, textAlign: "center" }}>發證日期</th>
+                <th style={{ width: 100, textAlign: "center" }}>有效截止日</th>
+                <th style={{ width: 100, textAlign: "center" }}>剩餘天數</th>
+                <th style={{ width: 90 }}>狀態</th>
                 <th>備註</th>
               </tr>
             </thead>
@@ -289,7 +343,7 @@ export default function CertificationsPage() {
                     <td>
                       <span className={`ev-badge ${sc.bg} ${sc.text}`}>
                         <span className={`ev-badge-dot ${sc.dot}`} />
-                        {CERT_STATUS_LABELS[cert.status]}
+                        {CERT_STATUS_LABELS[cert.status as CertStatus]}
                       </span>
                     </td>
                     <td style={{ maxWidth: 220, fontSize: "0.78rem", color: "#5F7A9B" }}>
@@ -322,6 +376,102 @@ export default function CertificationsPage() {
         <span><span style={{ color: "#EF4444", fontWeight: 700 }}>●</span> 緊急（≤30 天）</span>
         <span><span style={{ color: "#DC2626", fontWeight: 700 }}>●</span> 已過期</span>
       </div>
+
+      {showAddModal && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+          backgroundColor: "rgba(30,58,95,0.4)", backdropFilter: "blur(4px)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+        }}>
+          <div className="ev-card" style={{
+            width: "100%", maxWidth: 480, padding: 24, 
+            boxShadow: "0 10px 30px rgba(30,58,95,0.15)",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#1E3A5F" }}>新增供應商認證</div>
+              <button 
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                style={{ background: "none", border: "none", color: "#94AEC8", fontSize: "1.2rem", cursor: "pointer" }}
+              >
+                <i className="bi bi-x-lg" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddCert}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 18 }}>
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>供應商 *</label>
+                  <select 
+                    className="ev-select" style={{ width: "100%" }} required
+                    value={newCert.supplier_id} onChange={(e) => setNewCert({...newCert, supplier_id: e.target.value})}
+                  >
+                    {suppliersList.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name} ({s.code})</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>認證類別 *</label>
+                  <select 
+                    className="ev-select" style={{ width: "100%" }}
+                    value={newCert.cert_type} onChange={(e) => setNewCert({...newCert, cert_type: e.target.value})}
+                  >
+                    {CERT_TYPES.filter(t => t !== "全部").map((t) => (
+                      <option key={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>證書編號 *</label>
+                  <input 
+                    className="ev-input" style={{ width: "100%" }} required
+                    value={newCert.cert_number} onChange={(e) => setNewCert({...newCert, cert_number: e.target.value})}
+                    placeholder="例：TUV-16949-2024-0715"
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>頒發機構 *</label>
+                  <input 
+                    className="ev-input" style={{ width: "100%" }} required
+                    value={newCert.issued_by} onChange={(e) => setNewCert({...newCert, issued_by: e.target.value})}
+                    placeholder="例：SGS Taiwan、TÜV Rheinland"
+                  />
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div>
+                    <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>發證日期 *</label>
+                    <input 
+                      type="date" className="ev-input" style={{ width: "100%" }} required
+                      value={newCert.issue_date} onChange={(e) => setNewCert({...newCert, issue_date: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>到期日期 *</label>
+                    <input 
+                      type="date" className="ev-input" style={{ width: "100%" }} required
+                      value={newCert.expiry_date} onChange={(e) => setNewCert({...newCert, expiry_date: e.target.value})}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>備註</label>
+                  <input 
+                    className="ev-input" style={{ width: "100%" }}
+                    value={newCert.notes} onChange={(e) => setNewCert({...newCert, notes: e.target.value})}
+                    placeholder="認證特殊說明、年度複審提醒..."
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", borderTop: "1px solid #EAF1FB", paddingTop: 16 }}>
+                <button type="button" className="ev-btn ev-btn-ghost" onClick={() => setShowAddModal(false)}>取消</button>
+                <button type="submit" className="ev-btn ev-btn-primary">確認新增</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
