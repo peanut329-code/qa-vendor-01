@@ -197,7 +197,13 @@ export default function ScarDetailPage({ params }: { params: Promise<{ id: strin
       </div>
 
       {/* Key info cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14, marginBottom: 20 }}>
+        <div className="ev-card" style={{ padding: "14px 18px" }}>
+          <div style={{ fontSize: "0.72rem", color: "#5F7A9B", marginBottom: 4 }}>文件登入日期</div>
+          <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "#1E3A5F" }}>
+            {scar.created_at.slice(0, 10)}
+          </div>
+        </div>
         <div className="ev-card" style={{ padding: "14px 18px" }}>
           <div style={{ fontSize: "0.72rem", color: "#5F7A9B", marginBottom: 4 }}>觸發分數</div>
           <div style={{ fontSize: "1.8rem", fontWeight: 800, color: scoreColor(scar.triggered_score) }}>
@@ -218,7 +224,7 @@ export default function ScarDetailPage({ params }: { params: Promise<{ id: strin
         <div className="ev-card" style={{ padding: "14px 18px" }}>
           <div style={{ fontSize: "0.72rem", color: "#5F7A9B", marginBottom: 4 }}>驗證日期</div>
           <div style={{ fontSize: "0.95rem", fontWeight: 700, color: scar.verified_date ? "#22C55E" : "#94AEC8" }}>
-            {scar.verified_date ?? "尚未驗證"}
+            {scar.verified_date ? scar.verified_date.slice(0, 10) : "尚未驗證"}
           </div>
         </div>
       </div>

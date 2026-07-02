@@ -247,9 +247,12 @@ export default function ScarPage() {
                 return (
                   <tr key={sc.id}>
                     <td>
-                      <span style={{ fontFamily: "monospace", fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600 }}>
+                      <div style={{ fontFamily: "monospace", fontSize: "0.82rem", color: "#5F7A9B", fontWeight: 600 }}>
                         {sc.scar_number}
-                      </span>
+                      </div>
+                      <div style={{ color: "#94AEC8", fontSize: "0.72rem", marginTop: 2 }}>
+                        發行：{sc.created_at.slice(0, 10)}
+                      </div>
                     </td>
                     <td>
                       <div style={{ fontWeight: 600, color: "#1E3A5F", fontSize: "0.875rem" }}>
