@@ -156,7 +156,9 @@ export default function CertificationsPage() {
           customCerts = JSON.parse(savedCerts);
         } catch (e) {}
       }
-      setCertList([...CERTIFICATIONS, ...customCerts]);
+      const customIds = new Set(customCerts.map((c) => c.id));
+      const filteredDefault = CERTIFICATIONS.filter((c) => !customIds.has(c.id));
+      setCertList([...filteredDefault, ...customCerts]);
 
       const savedSups = localStorage.getItem("suppliers-custom");
       let customSups: any[] = [];
