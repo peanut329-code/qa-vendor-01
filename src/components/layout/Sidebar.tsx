@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { SCARS, CERTIFICATIONS } from "@/lib/mock-data";
 import { ROLE_LABELS } from "@/types";
 import type { UserRole } from "@/types";
 
@@ -13,17 +11,16 @@ interface NavItem {
   icon: string;
   label: string;
   allowedRoles: UserRole[];
-  badge?: number;
 }
 
 const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard",      icon: "bi-speedometer2",              label: "儀表板",         allowedRoles: ["super_admin","admin","manager","evaluator","viewer"] },
   { href: "/suppliers",      icon: "bi-building-fill",             label: "供應商管理",     allowedRoles: ["super_admin","admin","manager","evaluator","viewer"] },
   { href: "/asl",            icon: "bi-list-check",                label: "合格供應商名單", allowedRoles: ["super_admin","admin","manager","viewer"] },
-  { href: "/certifications", icon: "bi-patch-check-fill",          label: "認證效期",       allowedRoles: ["super_admin","admin","manager","viewer"], badge: 3 },
+  { href: "/certifications", icon: "bi-patch-check-fill",          label: "認證效期",       allowedRoles: ["super_admin","admin","manager","viewer"] },
   { href: "/evaluations",    icon: "bi-clipboard2-check-fill",     label: "評鑑作業",       allowedRoles: ["super_admin","admin","manager","evaluator","viewer"] },
   { href: "/audit",          icon: "bi-calendar3-week-fill",       label: "稽核行事曆",     allowedRoles: ["super_admin","admin","manager","viewer"] },
-  { href: "/scar",           icon: "bi-exclamation-triangle-fill", label: "SCAR 管理",      allowedRoles: ["super_admin","admin","manager","viewer"], badge: 7 },
+  { href: "/scar",           icon: "bi-exclamation-triangle-fill", label: "SCAR 管理",      allowedRoles: ["super_admin","admin","manager","viewer"] },
   { href: "/risk",           icon: "bi-diagram-3-fill",            label: "風險評估矩陣",   allowedRoles: ["super_admin","admin","manager","viewer"] },
   { href: "/reports",        icon: "bi-bar-chart-line-fill",       label: "報表分析",       allowedRoles: ["super_admin","admin","manager","evaluator","viewer"] },
 ];
@@ -38,58 +35,11 @@ export default function Sidebar() {
   const { user, logout } = useAuth();
   const role = user?.role as UserRole | undefined;
 
-  const [scarCount, setScarCount] = useState(3);
-  const [certCount, setCertCount] = useState(3);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      // 1. SCAR 待處理數
-      const savedScars = localStorage.getItem("scars-custom");
-      let currentScars = [...SCARS];
-      if (savedScars) {
-        try {
-          const parsed = JSON.parse(savedScars);
-          currentScars = [...SCARS, ...parsed];
-        } catch (e) {}
-      }
-      const activeScars = currentScars.filter((s) => s.status !== "closed").length;
-      setScarCount(activeScars);
-
-      // 2. 認證效期異常數
-      const savedCerts = localStorage.getItem("certifications-custom");
-      let currentCerts = [...CERTIFICATIONS];
-      if (savedCerts) {
-        try {
-          const parsed = JSON.parse(savedCerts);
-          currentCerts = [...CERTIFICATIONS, ...parsed];
-        } catch (e) {}
-      }
-      const TODAY = "2026-05-21";
-      const todayTime = new Date(TODAY).getTime();
-      const warningDays = 30 * 24 * 60 * 60 * 1000; // 30天
-      
-      const abnormalCount = currentCerts.filter((c) => {
-        const expTime = new Date(c.expiry_date).getTime();
-        return expTime < todayTime || (expTime - todayTime) <= warningDays;
-      }).length;
-
-      setCertCount(abnormalCount);
-    }
-  }, [pathname]);
-
   function isActive(href: string) {
     return pathname === href || pathname.startsWith(href + "/");
   }
 
-  const visibleNav = NAV_ITEMS.filter((item) => role && item.allowedRoles.includes(role)).map((item) => {
-    if (item.href === "/scar") {
-      return { ...item, badge: scarCount };
-    }
-    if (item.href === "/certifications") {
-      return { ...item, badge: certCount };
-    }
-    return item;
-  });
+  const visibleNav = NAV_ITEMS.filter((item) => role && item.allowedRoles.includes(role));
   const visibleAdminNav = ADMIN_NAV.filter((item) => role && item.allowedRoles.includes(role));
 
   const initials = user?.full_name
@@ -122,9 +72,6 @@ export default function Sidebar() {
               >
                 <i className={`bi ${item.icon} nav-icon`} />
                 <span>{item.label}</span>
-                {item.badge !== undefined && (
-                  <span className="nav-badge">{item.badge}</span>
-                )}
               </Link>
             ))}
           </div>
