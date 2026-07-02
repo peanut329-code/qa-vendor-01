@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { TIER_LABELS, STATUS_LABELS } from "@/types";
 import type { SupplierTier, SupplierStatus } from "@/types";
 import { getTierColor } from "@/lib/utils";
+import { SUPPLIERS } from "@/lib/mock-data";
 
 const CATEGORIES = [
   "矽晶圓", "特殊氣體", "光罩製造", "封裝測試", "製程化學品",
@@ -62,8 +63,30 @@ export default function NewSupplierPage() {
 
   function validate(): boolean {
     const newErrors: Record<string, string> = {};
-    if (!form.code.trim()) newErrors.code = "請輸入供應商代碼";
-    else if (!/^[A-Z0-9\-]+$/.test(form.code.trim())) newErrors.code = "代碼僅允許大寫英文、數字、連字號";
+    const inputCode = form.code.trim().toUpperCase();
+
+    if (!inputCode) {
+      newErrors.code = "請輸入供應商代碼";
+    } else if (!/^[A-Z0-9\-]+$/.test(inputCode)) {
+      newErrors.code = "代碼僅允許大寫英文、數字、連字號";
+    } else {
+      const staticCodes = SUPPLIERS.map((s) => s.code.toUpperCase());
+      let customCodes: string[] = [];
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem("suppliers-custom");
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            customCodes = parsed.map((s: any) => s.code.toUpperCase());
+          } catch (e) {}
+        }
+      }
+      const allCodes = [...staticCodes, ...customCodes];
+      if (allCodes.includes(inputCode)) {
+        newErrors.code = "此供應商代碼已存在，請使用其他代碼";
+      }
+    }
+
     if (!form.name.trim()) newErrors.name = "請輸入供應商名稱";
     if (!form.contact_name.trim()) newErrors.contact_name = "請輸入聯絡人姓名";
     if (form.contact_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.contact_email))
@@ -89,7 +112,7 @@ export default function NewSupplierPage() {
       
       const newSup = {
         id: `s-${Date.now()}`,
-        code: form.code,
+        code: form.code.trim().toUpperCase(),
         name: form.name,
         category: form.category,
         tier: form.tier,
