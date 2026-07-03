@@ -26,6 +26,7 @@ export default function SuppliersPage() {
   const [search, setSearch]     = useState("");
   const [catFilter, setCatFilter] = useState("全部");
   const [suppliersList, setSuppliersList] = useState<any[]>([]);
+  const [allEvals, setAllEvals] = useState<any[]>([]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -47,7 +48,51 @@ export default function SuppliersPage() {
 
       const allSuppliers = [...SUPPLIERS, ...custom];
       const activeSuppliers = allSuppliers.filter((s) => !deletedIds.includes(s.id));
+
+      // 載入評鑑列表 (包含客製評鑑)
+      const savedCustomEvals = localStorage.getItem("evaluations-custom");
+      let customEvals: any[] = [];
+      if (savedCustomEvals) {
+        try {
+          customEvals = JSON.parse(savedCustomEvals);
+        } catch (e) {}
+      }
+      const allEvalsMerged = [...EVALUATIONS, ...customEvals];
+
+      // 同步個別 eval 的狀態與分數 (類似 evaluations 頁面的邏輯)
+      allEvalsMerged.forEach((e) => {
+        const savedStatus = localStorage.getItem(`eval-status-${e.id}`);
+        const savedDetail = localStorage.getItem(`eval-detail-${e.id}`);
+        if (savedStatus && e.status !== savedStatus) {
+          e.status = savedStatus as any;
+        }
+        if (savedDetail) {
+          try {
+            const parsed = JSON.parse(savedDetail);
+            if (parsed.total_score !== e.total_score || parsed.tier !== e.tier) {
+              e.total_score = parsed.total_score;
+              e.tier = parsed.tier;
+              e.updated_at = parsed.updated_at;
+            }
+          } catch (err) {}
+        }
+      });
+
+      // 根據最新已核准/已完成評鑑更新供應商 overall_score 與 tier
+      activeSuppliers.forEach((s) => {
+        const sEvals = allEvalsMerged.filter((e) => e.supplier_id === s.id && (e.status === "completed" || e.status === "approved"));
+        if (sEvals.length > 0) {
+          const sorted = [...sEvals].sort((a, b) => b.created_at.localeCompare(a.created_at));
+          const latest = sorted[0];
+          if (latest.total_score !== undefined && latest.total_score !== null) {
+            s.overall_score = latest.total_score;
+            s.tier = latest.tier;
+          }
+        }
+      });
+
       setSuppliersList(activeSuppliers);
+      setAllEvals(allEvalsMerged);
     }
   }, []);
 
@@ -376,7 +421,7 @@ export default function SuppliersPage() {
                     </td>
                     <td><span className="code-pill">{s.category}</span></td>
                     <td style={{ fontFamily: "var(--font-mono)", color: "var(--text-muted)", textAlign: "center" }}>
-                      {EVALUATIONS.filter((e) => e.supplier_id === s.id).length}
+                      {allEvals.filter((e) => e.supplier_id === s.id).length}
                     </td>
                     <td style={{ textAlign: "right" }}>
                       <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>

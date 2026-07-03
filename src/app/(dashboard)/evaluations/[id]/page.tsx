@@ -24,7 +24,21 @@ export default function EvaluationDetailPage({ params }: { params: Promise<{ id:
   const [localScores, setLocalScores] = useState<any[]>([]);
 
   useEffect(() => {
-    const baseEv = EVALUATIONS.find((e) => e.id === id);
+    let baseEv = EVALUATIONS.find((e) => e.id === id);
+
+    if (typeof window !== "undefined") {
+      const savedCustom = localStorage.getItem("evaluations-custom");
+      if (savedCustom) {
+        try {
+          const custom = JSON.parse(savedCustom);
+          const found = custom.find((e: any) => e.id === id);
+          if (found) {
+            baseEv = found;
+          }
+        } catch (e) {}
+      }
+    }
+
     if (!baseEv) return;
 
     if (typeof window !== "undefined") {
@@ -36,10 +50,14 @@ export default function EvaluationDetailPage({ params }: { params: Promise<{ id:
       if (savedStatus) {
         currentEv.status = savedStatus as any;
       }
+      let detailScores: any[] | null = null;
       if (savedDetail) {
         try {
           const parsed = JSON.parse(savedDetail);
           currentEv = { ...currentEv, ...parsed };
+          if (parsed.scores) {
+            detailScores = parsed.scores;
+          }
         } catch (e) {}
       }
 
@@ -50,10 +68,10 @@ export default function EvaluationDetailPage({ params }: { params: Promise<{ id:
         try {
           setLocalScores(JSON.parse(savedScores));
         } catch (e) {
-          setLocalScores(EVALUATION_SCORES[id] ?? []);
+          setLocalScores(detailScores ?? EVALUATION_SCORES[id] ?? []);
         }
       } else {
-        setLocalScores(EVALUATION_SCORES[id] ?? []);
+        setLocalScores(detailScores ?? EVALUATION_SCORES[id] ?? []);
       }
     } else {
       setEvaluation(baseEv);
@@ -70,6 +88,19 @@ export default function EvaluationDetailPage({ params }: { params: Promise<{ id:
       if (typeof window !== "undefined") {
         localStorage.setItem(`eval-status-${id}`, newStatus);
         localStorage.setItem(`eval-detail-${id}`, JSON.stringify(updated));
+
+        // 同步更新 evaluations-custom
+        const savedCustom = localStorage.getItem("evaluations-custom");
+        if (savedCustom) {
+          try {
+            const custom = JSON.parse(savedCustom);
+            const idx = custom.findIndex((e: any) => e.id === id);
+            if (idx !== -1) {
+              custom[idx].status = newStatus;
+              localStorage.setItem("evaluations-custom", JSON.stringify(custom));
+            }
+          } catch (e) {}
+        }
       }
       // 同步記憶體
       const globalEv = EVALUATIONS.find(e => e.id === id);
@@ -127,6 +158,22 @@ export default function EvaluationDetailPage({ params }: { params: Promise<{ id:
       localStorage.setItem(`eval-status-${id}`, "completed");
       localStorage.setItem(`eval-detail-${id}`, JSON.stringify(updatedEv));
       localStorage.setItem(`eval-scores-${id}`, JSON.stringify(generatedScores));
+
+      // 同步更新 evaluations-custom
+      const savedCustom = localStorage.getItem("evaluations-custom");
+      if (savedCustom) {
+        try {
+          const custom = JSON.parse(savedCustom);
+          const idx = custom.findIndex((e: any) => e.id === id);
+          if (idx !== -1) {
+            custom[idx].status = "completed";
+            custom[idx].total_score = totalScore;
+            custom[idx].tier = tier;
+            custom[idx].updated_at = updatedEv.updated_at;
+            localStorage.setItem("evaluations-custom", JSON.stringify(custom));
+          }
+        } catch (e) {}
+      }
     }
 
     const globalEv = EVALUATIONS.find(e => e.id === id);

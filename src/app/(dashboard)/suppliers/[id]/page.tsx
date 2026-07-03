@@ -9,7 +9,7 @@ import {
 import { SUPPLIERS, EVALUATIONS, SCARS } from "@/lib/mock-data";
 import { getTierColor, getEvalStatusColor, getSupplierStatusColor, getScarStatusColor, formatDate, scoreColor } from "@/lib/utils";
 import { TIER_LABELS, EVAL_STATUS_LABELS, STATUS_LABELS, SCAR_STATUS_LABELS } from "@/types";
-import type { Supplier } from "@/types";
+import type { Supplier, EvaluationStatus, SupplierTier } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { exportSuppliersToExcel } from "@/lib/export";
 
@@ -19,6 +19,7 @@ export default function SupplierDetailPage({ params }: { params: Promise<{ id: s
   const { user } = useAuth();
 
   const [supplier, setSupplier] = useState<Supplier | null>(null);
+  const [supplierEvals, setSupplierEvals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,12 +34,42 @@ export default function SupplierDetailPage({ params }: { params: Promise<{ id: s
       const all = [...SUPPLIERS, ...custom];
       const found = all.find((s) => s.id === id);
       setSupplier(found || null);
+
+      // 載入評鑑 (包含 evaluations-custom)，並同步狀態與分數
+      const savedCustomEvals = localStorage.getItem("evaluations-custom");
+      let customEvals: any[] = [];
+      if (savedCustomEvals) {
+        try {
+          customEvals = JSON.parse(savedCustomEvals);
+        } catch (e) {}
+      }
+      const allEvals = [...EVALUATIONS, ...customEvals];
+      const filteredEvals = allEvals.filter((e) => e.supplier_id === id)
+        .sort((a, b) => b.created_at.localeCompare(a.created_at));
+
+      filteredEvals.forEach((e) => {
+        const savedStatus = localStorage.getItem(`eval-status-${e.id}`);
+        const savedDetail = localStorage.getItem(`eval-detail-${e.id}`);
+        if (savedStatus && e.status !== savedStatus) {
+          e.status = savedStatus as any;
+        }
+        if (savedDetail) {
+          try {
+            const parsed = JSON.parse(savedDetail);
+            if (parsed.total_score !== e.total_score || parsed.tier !== e.tier) {
+              e.total_score = parsed.total_score;
+              e.tier = parsed.tier;
+              e.updated_at = parsed.updated_at;
+            }
+          } catch (err) {}
+        }
+      });
+
+      setSupplierEvals(filteredEvals);
       setLoading(false);
     }
   }, [id]);
 
-  const supplierEvals = EVALUATIONS.filter((e) => e.supplier_id === id)
-    .sort((a, b) => b.created_at.localeCompare(a.created_at));
   const supplierScars = SCARS.filter((sc) => sc.supplier_id === id);
 
   if (loading) {
@@ -248,8 +279,8 @@ export default function SupplierDetailPage({ params }: { params: Promise<{ id: s
               </thead>
               <tbody>
                 {supplierEvals.map((ev) => {
-                  const sc = getEvalStatusColor(ev.status);
-                  const tc = ev.tier ? getTierColor(ev.tier) : null;
+                  const sc = getEvalStatusColor(ev.status as EvaluationStatus);
+                  const tc = ev.tier ? getTierColor(ev.tier as SupplierTier) : null;
                   return (
                     <tr key={ev.id}>
                       <td>
@@ -277,13 +308,13 @@ export default function SupplierDetailPage({ params }: { params: Promise<{ id: s
                         {tc && ev.tier ? (
                           <span className={`ev-badge ${tc.bg} ${tc.text}`}>
                             <span className={`ev-badge-dot ${tc.dot}`} />
-                            {TIER_LABELS[ev.tier]}
+                            {TIER_LABELS[ev.tier as SupplierTier]}
                           </span>
                         ) : <span style={{ color: "#C5D8F0" }}>—</span>}
                       </td>
                       <td>
                         <span className={`ev-badge ${sc.bg} ${sc.text}`}>
-                          {EVAL_STATUS_LABELS[ev.status]}
+                          {EVAL_STATUS_LABELS[ev.status as EvaluationStatus]}
                         </span>
                       </td>
                       <td style={{ color: "#5F7A9B", fontSize: "0.8rem", fontFamily: "monospace" }}>

@@ -27,6 +27,33 @@ export async function exportSuppliersToExcel(suppliers: Supplier[]): Promise<voi
   XLSX.writeFile(wb, `供應商清單_${today()}.xlsx`);
 }
 
+export async function exportEvaluationsToExcel(evaluations: Evaluation[]): Promise<void> {
+  const XLSX = await import("xlsx");
+  const data = evaluations.map((e) => {
+    let codeDisplay = e.id;
+    if (e.id.startsWith("e") && !isNaN(Number(e.id.substring(1)))) {
+      codeDisplay = `EVL-${e.id.substring(1).padStart(3, "0")}`;
+    }
+    return {
+      "評鑑單號": codeDisplay,
+      "供應商代碼": e.supplier_code,
+      "供應商名稱": e.supplier_name,
+      "評鑑期間": e.period,
+      "評鑑人員": e.evaluator_name,
+      "總分": e.total_score !== null ? e.total_score.toFixed(1) : "—",
+      "等級": e.tier ? TIER_LABELS[e.tier] : "—",
+      "狀態": EVAL_STATUS_LABELS[e.status] || e.status,
+      "備註": e.notes,
+      "評鑑日期": e.created_at.slice(0, 10),
+    };
+  });
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws["!cols"] = [12, 12, 30, 10, 10, 8, 8, 10, 40, 12].map((w) => ({ wch: w }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "評鑑作業清單");
+  XLSX.writeFile(wb, `評鑑作業清單_${today()}.xlsx`);
+}
+
 export async function exportEvaluationToExcel(
   evaluation: Evaluation,
   scores: EvaluationScore[]

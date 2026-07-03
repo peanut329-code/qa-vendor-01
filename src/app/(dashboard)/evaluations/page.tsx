@@ -8,6 +8,7 @@ import { getTierColor, getEvalStatusColor, formatDate } from "@/lib/utils";
 import { TIER_LABELS, EVAL_STATUS_LABELS } from "@/types";
 import type { EvaluationStatus, SupplierTier } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
+import { exportEvaluationsToExcel } from "@/lib/export";
 
 const STATUS_TABS: { key: any; label: string }[] = [
   { key: "ALL", label: "全部" },
@@ -106,12 +107,20 @@ export default function EvaluationsPage() {
           <div className="page-title">評鑑作業</div>
           <div className="page-subtitle">管理所有供應商評鑑流程與紀錄</div>
         </div>
-        {canCreate && (
-          <button className="ev-btn ev-btn-primary" onClick={() => router.push("/evaluations/new")}>
-            <i className="bi bi-plus-lg" />
-            新增評鑑
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button 
+            className="ev-btn ev-btn-ghost" 
+            onClick={() => exportEvaluationsToExcel(filtered)}
+          >
+            <i className="bi bi-file-earmark-excel" /> Excel 匯出
           </button>
-        )}
+          {canCreate && (
+            <button className="ev-btn ev-btn-primary" onClick={() => router.push("/evaluations/new")}>
+              <i className="bi bi-plus-lg" />
+              新增評鑑
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Status cards summary */}
