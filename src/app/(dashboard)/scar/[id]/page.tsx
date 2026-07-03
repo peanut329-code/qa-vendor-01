@@ -1,12 +1,12 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { SCARS } from "@/lib/mock-data";
 import { getScarStatusColor, getTierColor, scoreColor } from "@/lib/utils";
 import { SCAR_STATUS_LABELS, TIER_LABELS } from "@/types";
-import type { ScarStatus } from "@/types";
+import type { ScarStatus, SupplierTier } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { printScarReport, exportScarsToExcel } from "@/lib/export";
 
@@ -32,9 +32,63 @@ export default function ScarDetailPage({ params }: { params: Promise<{ id: strin
   const router = useRouter();
   const { user } = useAuth();
 
-  const scar = SCARS.find((sc) => sc.id === id);
-  const [currentStatus, setCurrentStatus] = useState<ScarStatus>(scar?.status ?? "open");
+  const [scar, setScar] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [currentStatus, setCurrentStatus] = useState<ScarStatus>("open");
   const [showConfirm, setShowConfirm] = useState<ScarStatus | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedCustom = localStorage.getItem("scars-custom");
+      let custom: any[] = [];
+      if (savedCustom) {
+        try { custom = JSON.parse(savedCustom); } catch (e) {}
+      }
+
+      const savedEdited = localStorage.getItem("scars-edited");
+      let editedMap: Record<string, any> = {};
+      if (savedEdited) {
+        try { editedMap = JSON.parse(savedEdited); } catch (e) {}
+      }
+
+      const deletedSaved = localStorage.getItem("scars-deleted");
+      let deletedIds: string[] = [];
+      if (deletedSaved) {
+        try { deletedIds = JSON.parse(deletedSaved); } catch (e) {}
+      }
+
+      if (deletedIds.includes(id)) {
+        setScar(null);
+        setLoading(false);
+        return;
+      }
+
+      const all = [...SCARS, ...custom];
+      const found = all.find(s => s.id === id);
+      if (found) {
+        let current = { ...found };
+        if (editedMap[found.id]) {
+          current = { ...current, ...editedMap[found.id] };
+        }
+        // Correct the company typo in issue_description if found
+        if (current.issue_description) {
+          current.issue_description = current.issue_description.replace("company 公司", "公司");
+        }
+        setScar(current);
+        setCurrentStatus(current.status);
+      }
+      setLoading(false);
+    }
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div style={{ textAlign: "center", padding: "80px 20px", color: "#5F7A9B" }}>
+        <div className="spinner-border text-primary" role="status" style={{ width: "2rem", height: "2rem", marginBottom: 12 }} />
+        <div>載入中...</div>
+      </div>
+    );
+  }
 
   if (!scar) {
     return (
@@ -47,7 +101,7 @@ export default function ScarDetailPage({ params }: { params: Promise<{ id: strin
   }
 
   const sc = getScarStatusColor(currentStatus);
-  const tierC = getTierColor(scar.triggered_tier);
+  const tierC = getTierColor(scar.triggered_tier as SupplierTier);
   const canUpdate = user && ["super_admin", "admin", "manager"].includes(user.role);
 
   const nextFlow = STATUS_FLOW.find((f) => f.from === currentStatus);
@@ -56,6 +110,34 @@ export default function ScarDetailPage({ params }: { params: Promise<{ id: strin
   function confirmStatusChange(toStatus: ScarStatus) {
     setCurrentStatus(toStatus);
     setShowConfirm(null);
+
+    if (scar) {
+      const updated = { ...scar, status: toStatus };
+      if (typeof window !== "undefined") {
+        if (scar.id.startsWith("scar-")) {
+          const customSaved = localStorage.getItem("scars-custom");
+          if (customSaved) {
+            try {
+              const list = JSON.parse(customSaved);
+              const idx = list.findIndex((x: any) => x.id === scar.id);
+              if (idx > -1) {
+                list[idx] = updated;
+                localStorage.setItem("scars-custom", JSON.stringify(list));
+              }
+            } catch (e) {}
+          }
+        } else {
+          const editedSaved = localStorage.getItem("scars-edited");
+          let editedMap: Record<string, any> = {};
+          if (editedSaved) {
+            try { editedMap = JSON.parse(editedSaved); } catch (e) {}
+          }
+          editedMap[scar.id] = updated;
+          localStorage.setItem("scars-edited", JSON.stringify(editedMap));
+        }
+      }
+      setScar(updated);
+    }
   }
 
   // Corrective action lines
@@ -214,7 +296,7 @@ export default function ScarDetailPage({ params }: { params: Promise<{ id: strin
           <div style={{ fontSize: "0.72rem", color: "#5F7A9B", marginBottom: 6 }}>觸發等級</div>
           <span className={`ev-badge ${tierC.bg} ${tierC.text}`} style={{ fontSize: "0.88rem" }}>
             <span className={`ev-badge-dot ${tierC.dot}`} />
-            {TIER_LABELS[scar.triggered_tier]}
+            {scar.triggered_tier ? TIER_LABELS[scar.triggered_tier as SupplierTier] : "—"}
           </span>
         </div>
         <div className="ev-card" style={{ padding: "14px 18px" }}>
@@ -279,7 +361,7 @@ export default function ScarDetailPage({ params }: { params: Promise<{ id: strin
             矯正措施計畫
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {caLines.map((line, i) => {
+            {caLines.map((line: string, i: number) => {
               const isCompleted = line.includes("已完成") || line.includes("已上線") || line.includes("已補充");
               return (
                 <div
@@ -317,7 +399,7 @@ export default function ScarDetailPage({ params }: { params: Promise<{ id: strin
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                 <span style={{ fontSize: "0.78rem", color: "#5F7A9B", fontWeight: 600 }}>完成進度</span>
                 <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#5B8FD9" }}>
-                  {caLines.filter((l) => l.includes("已完成") || l.includes("已上線") || l.includes("已補充")).length}
+                  {caLines.filter((l: string) => l.includes("已完成") || l.includes("已上線") || l.includes("已補充")).length}
                   /{caLines.length} 項
                 </span>
               </div>
@@ -326,7 +408,7 @@ export default function ScarDetailPage({ params }: { params: Promise<{ id: strin
                   style={{
                     height: "100%", borderRadius: 999,
                     background: "linear-gradient(90deg,#5B8FD9,#22C55E)",
-                    width: `${(caLines.filter((l) => l.includes("已完成") || l.includes("已上線") || l.includes("已補充")).length / caLines.length) * 100}%`,
+                    width: `${(caLines.filter((l: string) => l.includes("已完成") || l.includes("已上線") || l.includes("已補充")).length / caLines.length) * 100}%`,
                     transition: "width 0.5s",
                   }}
                 />
