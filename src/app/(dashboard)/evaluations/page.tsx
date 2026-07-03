@@ -83,15 +83,25 @@ export default function EvaluationsPage() {
   const canCreate = user && ["super_admin", "admin", "manager", "evaluator"].includes(user.role);
   const canReview = user && ["super_admin", "admin", "manager"].includes(user.role);
 
-  const filtered = evalList.filter((e) => {
-    const matchStatus = statusFilter === "ALL" 
-      ? true 
-      : statusFilter === "approved_all"
-        ? (e.status === "completed" || e.status === "approved")
-        : e.status === statusFilter;
-    const matchSearch = !search || e.supplier_name.includes(search) || e.supplier_code.includes(search);
-    return matchStatus && matchSearch;
-  });
+  const orderedList = evalList
+    .slice()
+    .sort((a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime())
+    .map((e, idx) => ({
+      ...e,
+      evl_code: `EVL-${String(idx + 1).padStart(3, "0")}`
+    }));
+
+  const filtered = orderedList
+    .filter((e) => {
+      const matchStatus = statusFilter === "ALL" 
+        ? true 
+        : statusFilter === "approved_all"
+          ? (e.status === "completed" || e.status === "approved")
+          : e.status === statusFilter;
+      const matchSearch = !search || e.supplier_name.includes(search) || e.supplier_code.includes(search);
+      return matchStatus && matchSearch;
+    })
+    .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
 
   const counts: Record<string, number> = { ALL: evalList.length };
   evalList.forEach((e) => {
@@ -240,7 +250,7 @@ export default function EvaluationsPage() {
                   <tr key={ev.id}>
                     <td>
                       <span style={{ fontFamily: "monospace", fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600 }}>
-                        EVL-{String(i + 1).padStart(3, "0")}
+                        {ev.evl_code}
                       </span>
                     </td>
                     <td>
