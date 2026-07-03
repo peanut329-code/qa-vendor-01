@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
@@ -37,13 +37,14 @@ const STATUS_COUNT_COLOR: Record<AslStatus, { count: string; bg: string; icon: s
 export default function AslPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const [records, setRecords] = useState(ASL_RECORDS);
+  const [records, setRecords] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState<AslStatus | "ALL">("ALL");
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editRecord, setEditRecord] = useState<any | null>(null);
 
+  // 載入 localStorage 快取並合併
   const [newRecord, setNewRecord] = useState({
     supplier_name: "",
     supplier_code: "",
@@ -51,12 +52,36 @@ export default function AslPage() {
     scope: "",
     status: "approved" as AslStatus,
     approved_by: "",
-    approved_date: "2026-05-22",
-    valid_until: "2029-05-21",
-    review_date: "2027-05-22",
+    approved_date: "2025-08-31",
+    valid_until: "2028-08-30",
+    review_date: "2027-08-31",
     conditions: "",
     notes: "",
   });
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedCustom = localStorage.getItem("asl-custom");
+      let custom: any[] = [];
+      if (savedCustom) {
+        try { custom = JSON.parse(savedCustom); } catch (e) {}
+      }
+
+      const savedEdited = localStorage.getItem("asl-edited");
+      let editedMap: Record<string, any> = {};
+      if (savedEdited) {
+        try { editedMap = JSON.parse(savedEdited); } catch (e) {}
+      }
+
+      const allRecords = [...ASL_RECORDS, ...custom];
+      const merged = allRecords.map((r) => {
+        if (editedMap[r.id]) {
+          return { ...r, ...editedMap[r.id] };
+        }
+        return r;
+      });
+      setRecords(merged);
+    }
+  }, []);
 
   function handleAddRecord(e: React.FormEvent) {
     e.preventDefault();
@@ -69,6 +94,17 @@ export default function AslPage() {
       supplier_id: `s-${Date.now()}`,
       ...newRecord
     };
+
+    if (typeof window !== "undefined") {
+      const savedCustom = localStorage.getItem("asl-custom");
+      let custom: any[] = [];
+      if (savedCustom) {
+        try { custom = JSON.parse(savedCustom); } catch (e) {}
+      }
+      custom.push(recordToAdd);
+      localStorage.setItem("asl-custom", JSON.stringify(custom));
+    }
+
     setRecords((prev) => [recordToAdd, ...prev]);
     setShowAddModal(false);
     setNewRecord({
@@ -78,9 +114,9 @@ export default function AslPage() {
       scope: "",
       status: "approved",
       approved_by: "",
-      approved_date: "2026-05-22",
-      valid_until: "2029-05-21",
-      review_date: "2027-05-22",
+      approved_date: "2025-08-31",
+      valid_until: "2028-08-30",
+      review_date: "2027-08-31",
       conditions: "",
       notes: "",
     });
@@ -94,7 +130,7 @@ export default function AslPage() {
 
   const counts = useMemo(() => {
     const obj = { approved: 0, conditional: 0, probation: 0, suspended: 0 };
-    records.forEach((r) => { obj[r.status]++; });
+    records.forEach((r) => { obj[r.status as AslStatus]++; });
     return obj;
   }, [records]);
 
@@ -278,7 +314,7 @@ export default function AslPage() {
         {/* ASL Records */}
         <div style={{ padding: "8px 0" }}>
           {filtered.map((r) => {
-            const sc = getAslStatusColor(r.status);
+            const sc = getAslStatusColor(r.status as AslStatus);
             const isExpanded = expandedId === r.id;
             const reviewDays = daysUntil(r.review_date);
             const validDays = daysUntil(r.valid_until);
@@ -311,7 +347,7 @@ export default function AslPage() {
                     background: sc.bg === "bg-emerald-100" ? "#D1FAE5" : sc.bg === "bg-amber-100" ? "#FDE68A" : sc.bg === "bg-orange-100" ? "#FED7AA" : "#FECACA",
                     display: "flex", alignItems: "center", justifyContent: "center",
                   }}>
-                    <i className={`bi ${STATUS_ICON[r.status]}`} style={{
+                    <i className={`bi ${STATUS_ICON[r.status as AslStatus]}`} style={{
                       fontSize: "1.2rem",
                       color: sc.border,
                     }} />
@@ -341,7 +377,7 @@ export default function AslPage() {
                       </span>
                       <span className={`ev-badge ${sc.bg} ${sc.text}`}>
                         <span className={`ev-badge-dot`} style={{ background: sc.border }} />
-                        {ASL_STATUS_LABELS[r.status]}
+                        {ASL_STATUS_LABELS[r.status as AslStatus]}
                       </span>
                       {urgentReview && (
                         <span style={{
@@ -506,6 +542,26 @@ export default function AslPage() {
 
             <form onSubmit={(e) => {
               e.preventDefault();
+              if (typeof window !== "undefined") {
+                if (editRecord.id.startsWith("asl-") && !ASL_RECORDS.some(r => r.id === editRecord.id)) {
+                  const savedCustom = localStorage.getItem("asl-custom");
+                  if (savedCustom) {
+                    try {
+                      let custom = JSON.parse(savedCustom);
+                      custom = custom.map((r: any) => r.id === editRecord.id ? editRecord : r);
+                      localStorage.setItem("asl-custom", JSON.stringify(custom));
+                    } catch (err) {}
+                  }
+                } else {
+                  const savedEdited = localStorage.getItem("asl-edited");
+                  let editedMap: Record<string, any> = {};
+                  if (savedEdited) {
+                    try { editedMap = JSON.parse(savedEdited); } catch (err) {}
+                  }
+                  editedMap[editRecord.id] = editRecord;
+                  localStorage.setItem("asl-edited", JSON.stringify(editedMap));
+                }
+              }
               setRecords((prev) => prev.map((r) => r.id === editRecord.id ? editRecord : r));
               setEditRecord(null);
             }}>
