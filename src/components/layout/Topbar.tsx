@@ -72,7 +72,7 @@ export default function Topbar() {
   }
 
   return (
-    <header className="layout-topbar" style={{ display: "flex", alignItems: "center", padding: "0 24px", justifyContent: "space-between", position: "relative" }}>
+    <header className="layout-topbar" style={{ display: "flex", alignItems: "center", padding: "0 24px", justifyContent: "space-between" }}>
       {/* Left: Page title */}
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <div
