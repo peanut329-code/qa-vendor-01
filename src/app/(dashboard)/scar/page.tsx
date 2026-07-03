@@ -47,6 +47,7 @@ export default function ScarPage() {
     corrective_action: "",
     target_date: "2026-07-31",
     status: "open" as ScarStatus,
+    created_at: "",
   });
 
   // 載入 localStorage 快取
@@ -90,7 +91,7 @@ export default function ScarPage() {
   useEffect(() => {
     if (showAddModal && !editingScar) {
       setNewScar({
-        scar_number: `SCAR-2025-${Math.floor(100 + Math.random() * 900)}`,
+        scar_number: `SCAR-2026-${Math.floor(100 + Math.random() * 900)}`,
         supplier_id: SUPPLIERS[0]?.id || "",
         issue_description: "",
         category: "品質",
@@ -98,6 +99,7 @@ export default function ScarPage() {
         corrective_action: "",
         target_date: "2026-07-31",
         status: "open",
+        created_at: new Date().toISOString().slice(0, 10),
       });
     }
   }, [showAddModal, editingScar]);
@@ -118,9 +120,9 @@ export default function ScarPage() {
       evaluation_id: "",
       verified_date: null,
       created_by: user?.id || "u1",
-      created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       ...newScar,
+      created_at: newScar.created_at ? `${newScar.created_at}T10:00:00Z` : new Date().toISOString(),
     };
 
     if (typeof window !== "undefined") {
@@ -148,6 +150,7 @@ export default function ScarPage() {
       corrective_action: scar.corrective_action || "",
       target_date: scar.target_date,
       status: scar.status,
+      created_at: scar.created_at ? scar.created_at.slice(0, 10) : new Date().toISOString().slice(0, 10),
     });
     setShowAddModal(true);
   }
@@ -164,6 +167,7 @@ export default function ScarPage() {
       corrective_action: "",
       target_date: "2026-07-31",
       status: "open",
+      created_at: "",
     });
   }
 
@@ -189,6 +193,7 @@ export default function ScarPage() {
       supplier_name: supplier.name,
       supplier_code: supplier.code,
       triggered_tier: supplier.tier,
+      created_at: newScar.created_at ? `${newScar.created_at}T10:00:00Z` : editingScar.created_at,
       updated_at: new Date().toISOString(),
     };
 
@@ -398,7 +403,6 @@ export default function ScarPage() {
                 <th>供應商</th>
                 <th>問題類別</th>
                 <th>問題描述</th>
-                <th>觸發分數</th>
                 <th>觸發等級</th>
                 <th>目標完成日</th>
                 <th>狀態</th>
@@ -443,11 +447,6 @@ export default function ScarPage() {
                       >
                         {sc.issue_description}
                       </div>
-                    </td>
-                    <td>
-                      <span style={{ fontWeight: 700, color: scoreColor(sc.triggered_score), fontSize: "1rem" }}>
-                        {sc.triggered_score}
-                      </span>
                     </td>
                     <td>
                       <span className={`ev-badge ${tierC.bg} ${tierC.text}`}>
@@ -592,6 +591,13 @@ export default function ScarPage() {
                   <input 
                     type="date" className="ev-input" style={{ width: "100%" }} required
                     value={newScar.target_date} onChange={(e) => setNewScar({...newScar, target_date: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>文件登入日期 *</label>
+                  <input 
+                    type="date" className="ev-input" style={{ width: "100%" }} required
+                    value={newScar.created_at} onChange={(e) => setNewScar({...newScar, created_at: e.target.value})}
                   />
                 </div>
                 <div style={{ gridColumn: "span 2" }}>
