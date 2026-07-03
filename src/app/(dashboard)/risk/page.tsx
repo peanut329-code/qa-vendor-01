@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { SUPPLIER_RISKS } from "@/lib/mock-data";
+import { SUPPLIER_RISKS, SUPPLIERS } from "@/lib/mock-data";
 import { getRiskLevel, getRiskColor } from "@/lib/utils";
 import { RISK_LEVEL_LABELS, TIER_LABELS } from "@/types";
 import type { RiskLevel, SupplierTier } from "@/types";
@@ -44,7 +44,7 @@ const TIER_COLORS: Record<SupplierTier, { bg: string; text: string }> = {
   D: { bg: "#FEE2E2", text: "#991B1B" },
 };
 
-const SUPPLIER_COLORS = ["#5B8FD9", "#22C55E", "#F59E0B", "#8B5CF6", "#EF4444"];
+const SUPPLIER_COLORS = ["#5B8FD9", "#22C55E", "#F59E0B", "#8B5CF6", "#EF4444", "#3B82F6", "#10B981", "#EC4899", "#6366F1"];
 const IMPACT_LABELS = ["", "極低", "低", "中", "高", "極高"];
 const LIKELIHOOD_LABELS = ["", "極低", "低", "中", "高", "極高"];
 
@@ -52,16 +52,68 @@ export default function RiskPage() {
   const { user } = useAuth();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [view, setView] = useState<"matrix" | "list">("matrix");
+  const [risks, setRisks] = useState<any[]>([]);
+  const [activeLevelFilter, setActiveLevelFilter] = useState<RiskLevel | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [editingRisk, setEditingRisk] = useState<any | null>(null);
+  const [newRisk, setNewRisk] = useState({
+    supplier_id: "",
+    likelihood: 3,
+    impact: 3,
+    mitigation: "",
+    owner: "",
+    last_reviewed: "",
+    risk_factors_text: "",
+  });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedCustom = localStorage.getItem("risks-custom");
+      let custom: any[] = [];
+      if (savedCustom) {
+        try { custom = JSON.parse(savedCustom); } catch (e) {}
+      }
+
+      const savedDeleted = localStorage.getItem("risks-deleted");
+      let deleted: string[] = [];
+      if (savedDeleted) {
+        try { deleted = JSON.parse(savedDeleted); } catch (e) {}
+      }
+
+      const savedEdited = localStorage.getItem("risks-edited");
+      let edited: Record<string, any> = {};
+      if (savedEdited) {
+        try { edited = JSON.parse(savedEdited); } catch (e) {}
+      }
+
+      const all = [...SUPPLIER_RISKS, ...custom];
+      const updated = all
+        .filter((r) => !deleted.includes(r.supplier_id))
+        .map((r) => {
+          let current = { ...r };
+          if (edited[r.supplier_id]) {
+            current = { ...current, ...edited[r.supplier_id] };
+          }
+          return current;
+        });
+      setRisks(updated);
+    }
+  }, []);
 
   if (!user || !["super_admin", "admin", "manager", "viewer"].includes(user.role)) {
     return <AccessDenied />;
   }
 
   const canExport = user && ["super_admin", "admin", "manager"].includes(user.role);
-  const selectedRisk = selectedId ? SUPPLIER_RISKS.find((r) => r.supplier_id === selectedId) : null;
+  const selectedRisk = selectedId ? risks.find((r) => r.supplier_id === selectedId) : null;
 
   const riskCounts: Record<RiskLevel, number> = { low: 0, medium: 0, high: 0, critical: 0 };
-  SUPPLIER_RISKS.forEach((r) => { riskCounts[r.risk_level]++; });
+  risks.forEach((r) => {
+    const lvl = r.risk_level as RiskLevel;
+    if (riskCounts[lvl] !== undefined) {
+      riskCounts[lvl]++;
+    }
+  });
 
   const RISK_STAT_COLORS: Record<RiskLevel, { count: string; bg: string; icon: string }> = {
     low:      { count: "#22C55E", bg: "#F0FDF4", icon: "bi-check-circle-fill" },
@@ -69,6 +121,165 @@ export default function RiskPage() {
     high:     { count: "#EF4444", bg: "#FEF2F2", icon: "bi-exclamation-circle-fill" },
     critical: { count: "#DC2626", bg: "#FFF1F2", icon: "bi-x-octagon-fill" },
   };
+
+  const filtered = risks
+    .filter((r) => {
+      if (activeLevelFilter && r.risk_level !== activeLevelFilter) return false;
+      return true;
+    });
+
+  function openAddModal() {
+    setEditingRisk(null);
+    setNewRisk({
+      supplier_id: SUPPLIERS.find(s => !risks.some(r => r.supplier_id === s.id))?.id || SUPPLIERS[0]?.id || "",
+      likelihood: 3,
+      impact: 3,
+      mitigation: "",
+      owner: "",
+      last_reviewed: new Date().toISOString().slice(0, 10),
+      risk_factors_text: "",
+    });
+    setShowModal(true);
+  }
+
+  function openEditModal(risk: any) {
+    setEditingRisk(risk);
+    setNewRisk({
+      supplier_id: risk.supplier_id,
+      likelihood: risk.likelihood,
+      impact: risk.impact,
+      mitigation: risk.mitigation || "",
+      owner: risk.owner || "",
+      last_reviewed: risk.last_reviewed || new Date().toISOString().slice(0, 10),
+      risk_factors_text: risk.risk_factors ? risk.risk_factors.join("\n") : "",
+    });
+    setShowModal(true);
+  }
+
+  function handleDeleteRisk(supplierId: string) {
+    if (!confirm("確定要刪除此供應商的風險評估嗎？")) return;
+
+    if (typeof window !== "undefined") {
+      const savedCustom = localStorage.getItem("risks-custom");
+      let custom: any[] = [];
+      if (savedCustom) {
+        try { custom = JSON.parse(savedCustom); } catch (e) {}
+      }
+
+      // If it is custom created
+      if (custom.some(x => x.supplier_id === supplierId)) {
+        const filteredCustom = custom.filter(x => x.supplier_id !== supplierId);
+        localStorage.setItem("risks-custom", JSON.stringify(filteredCustom));
+      } else {
+        const savedDeleted = localStorage.getItem("risks-deleted");
+        let deleted: string[] = [];
+        if (savedDeleted) {
+          try { deleted = JSON.parse(savedDeleted); } catch (e) {}
+        }
+        if (!deleted.includes(supplierId)) {
+          deleted.push(supplierId);
+          localStorage.setItem("risks-deleted", JSON.stringify(deleted));
+        }
+      }
+    }
+
+    setRisks(prev => prev.filter(r => r.supplier_id !== supplierId));
+    if (selectedId === supplierId) setSelectedId(null);
+  }
+
+  function handleSaveRisk(e: React.FormEvent) {
+    e.preventDefault();
+    const supplier = SUPPLIERS.find(s => s.id === newRisk.supplier_id);
+    if (!supplier) return;
+
+    const score = newRisk.likelihood * newRisk.impact;
+    const level: RiskLevel = 
+      score >= 16 ? "critical" :
+      score >= 9 ? "high" :
+      score >= 4 ? "medium" : "low";
+
+    const factors = newRisk.risk_factors_text
+      ? newRisk.risk_factors_text.split("\n").map(f => f.trim()).filter(Boolean)
+      : ["未指定具體風險因子"];
+
+    if (editingRisk) {
+      const updated = {
+        ...editingRisk,
+        likelihood: newRisk.likelihood,
+        impact: newRisk.impact,
+        risk_score: score,
+        risk_level: level,
+        risk_factors: factors,
+        mitigation: newRisk.mitigation,
+        owner: newRisk.owner,
+        last_reviewed: newRisk.last_reviewed,
+      };
+
+      if (typeof window !== "undefined") {
+        const savedCustom = localStorage.getItem("risks-custom");
+        let custom: any[] = [];
+        if (savedCustom) {
+          try { custom = JSON.parse(savedCustom); } catch (e) {}
+        }
+
+        if (custom.some(x => x.supplier_id === editingRisk.supplier_id)) {
+          const idx = custom.findIndex(x => x.supplier_id === editingRisk.supplier_id);
+          if (idx > -1) {
+            custom[idx] = updated;
+            localStorage.setItem("risks-custom", JSON.stringify(custom));
+          }
+        } else {
+          const savedEdited = localStorage.getItem("risks-edited");
+          let edited: Record<string, any> = {};
+          if (savedEdited) {
+            try { edited = JSON.parse(savedEdited); } catch (e) {}
+          }
+          edited[editingRisk.supplier_id] = updated;
+          localStorage.setItem("risks-edited", JSON.stringify(edited));
+        }
+      }
+
+      setRisks(prev => prev.map(r => r.supplier_id === editingRisk.supplier_id ? updated : r));
+    } else {
+      const added = {
+        supplier_id: supplier.id,
+        supplier_name: supplier.name,
+        supplier_code: supplier.code,
+        category: supplier.category,
+        tier: supplier.tier,
+        likelihood: newRisk.likelihood,
+        impact: newRisk.impact,
+        risk_score: score,
+        risk_level: level,
+        risk_factors: factors,
+        mitigation: newRisk.mitigation,
+        owner: newRisk.owner,
+        last_reviewed: newRisk.last_reviewed,
+      };
+
+      if (typeof window !== "undefined") {
+        const savedCustom = localStorage.getItem("risks-custom");
+        let custom: any[] = [];
+        if (savedCustom) {
+          try { custom = JSON.parse(savedCustom); } catch (e) {}
+        }
+        custom.push(added);
+        localStorage.setItem("risks-custom", JSON.stringify(custom));
+      }
+
+      setRisks(prev => [...prev, added]);
+    }
+
+    setShowModal(false);
+    setEditingRisk(null);
+  }
+
+  const calculatedScore = newRisk.likelihood * newRisk.impact;
+  const calculatedLevel: RiskLevel = 
+    calculatedScore >= 16 ? "critical" :
+    calculatedScore >= 9 ? "high" :
+    calculatedScore >= 4 ? "medium" : "low";
+  const calculatedColor = getRiskColor(calculatedLevel);
 
   return (
     <div>
@@ -98,10 +309,13 @@ export default function RiskPage() {
             ))}
           </div>
           {canExport && (
-            <button className="ev-btn ev-btn-ghost" onClick={() => exportRiskToExcel(SUPPLIER_RISKS)}>
+            <button className="ev-btn ev-btn-secondary" onClick={() => exportRiskToExcel(risks)}>
               <i className="bi bi-file-earmark-excel" /> Excel 匯出
             </button>
           )}
+          <button className="ev-btn ev-btn-primary" onClick={openAddModal}>
+            <i className="bi bi-plus-lg" /> 新增評估
+          </button>
         </div>
       </div>
 
@@ -122,15 +336,26 @@ export default function RiskPage() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 24 }}>
         {(["critical", "high", "medium", "low"] as RiskLevel[]).map((level) => {
           const cc = RISK_STAT_COLORS[level];
+          const isActive = activeLevelFilter === level;
           return (
-            <div key={level} style={{
-              background: cc.bg,
-              border: `1.5px solid ${cc.count}30`,
-              borderRadius: 12, padding: "14px 18px",
-              boxShadow: "0 1px 4px rgba(91,143,217,0.06)",
-            }}>
+            <div 
+              key={level} 
+              onClick={() => setActiveLevelFilter(isActive ? null : level)}
+              style={{
+                background: cc.bg,
+                border: isActive ? `2px solid ${cc.count}` : `1.5px solid ${cc.count}30`,
+                borderRadius: 12, padding: "14px 18px",
+                boxShadow: isActive ? `0 4px 12px ${cc.count}30` : "0 1px 4px rgba(91,143,217,0.06)",
+                cursor: "pointer",
+                transform: isActive ? "scale(1.02)" : "scale(1)",
+                opacity: activeLevelFilter && !isActive ? 0.6 : 1,
+                transition: "all 0.15s",
+              }}
+            >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <span style={{ fontSize: "0.78rem", color: "#5F7A9B", fontWeight: 500 }}>{RISK_LEVEL_LABELS[level]}</span>
+                <span style={{ fontSize: "0.78rem", color: "#5F7A9B", fontWeight: 500 }}>
+                  {RISK_LEVEL_LABELS[level]} {isActive && " (已選)"}
+                </span>
                 <div style={{ width: 28, height: 28, borderRadius: 8, background: cc.bg, border: `1px solid ${cc.count}40`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <i className={`bi ${cc.icon}`} style={{ color: cc.count, fontSize: "0.85rem" }} />
                 </div>
@@ -197,7 +422,7 @@ export default function RiskPage() {
                       const score = likelihood * impact;
 
                       // Find suppliers at this cell
-                      const suppliersHere = SUPPLIER_RISKS.filter(
+                      const suppliersHere = filtered.filter(
                         (r) => r.likelihood === likelihood && r.impact === impact
                       );
 
@@ -228,8 +453,9 @@ export default function RiskPage() {
 
                           {/* Supplier dots */}
                           <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 4 }}>
-                            {suppliersHere.map((r, idx) => {
-                              const supplierIdx = SUPPLIER_RISKS.findIndex((s) => s.supplier_id === r.supplier_id);
+                            {suppliersHere.map((r) => {
+                              const supplierIdx = risks.findIndex((s) => s.supplier_id === r.supplier_id);
+                              const color = supplierIdx >= 0 ? SUPPLIER_COLORS[supplierIdx % SUPPLIER_COLORS.length] : "#8B5CF6";
                               const isSelected = selectedId === r.supplier_id;
                               return (
                                 <div
@@ -240,15 +466,15 @@ export default function RiskPage() {
                                     background: isSelected ? "white" : "rgba(255,255,255,0.75)",
                                     borderRadius: 6, padding: "3px 6px",
                                     cursor: "pointer",
-                                    border: isSelected ? `2px solid ${SUPPLIER_COLORS[supplierIdx]}` : "2px solid transparent",
-                                    boxShadow: isSelected ? `0 2px 8px ${SUPPLIER_COLORS[supplierIdx]}40` : "none",
+                                    border: isSelected ? `2px solid ${color}` : "2px solid transparent",
+                                    boxShadow: isSelected ? `0 2px 8px ${color}40` : "none",
                                     transition: "all 0.15s",
                                   }}
                                 >
                                   <div style={{
                                     width: 10, height: 10, borderRadius: "50%", flexShrink: 0,
-                                    background: SUPPLIER_COLORS[supplierIdx],
-                                    boxShadow: `0 0 0 2px ${SUPPLIER_COLORS[supplierIdx]}40`,
+                                    background: color,
+                                    boxShadow: `0 0 0 2px ${color}40`,
                                   }} />
                                   <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "#1E3A5F", whiteSpace: "nowrap" }}>
                                     {r.supplier_code}
@@ -282,9 +508,11 @@ export default function RiskPage() {
             <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid #EAF1FB" }}>
               <div style={{ fontSize: "0.75rem", color: "#5F7A9B", fontWeight: 600, marginBottom: 10 }}>供應商圖例</div>
               <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-                {SUPPLIER_RISKS.map((r, idx) => {
+                {filtered.map((r) => {
                   const rc = getRiskColor(r.risk_level);
                   const isSelected = selectedId === r.supplier_id;
+                  const supplierIdx = risks.findIndex((s) => s.supplier_id === r.supplier_id);
+                  const color = supplierIdx >= 0 ? SUPPLIER_COLORS[supplierIdx % SUPPLIER_COLORS.length] : "#8B5CF6";
                   return (
                     <div
                       key={r.supplier_id}
@@ -293,14 +521,14 @@ export default function RiskPage() {
                         display: "flex", alignItems: "center", gap: 8,
                         padding: "6px 12px", borderRadius: 8,
                         background: isSelected ? "#EDF3FA" : "#F7FAFF",
-                        border: `1.5px solid ${isSelected ? SUPPLIER_COLORS[idx] : "#E0EBF8"}`,
+                        border: `1.5px solid ${isSelected ? color : "#E0EBF8"}`,
                         cursor: "pointer", transition: "all 0.15s",
                       }}
                     >
                       <div style={{
                         width: 12, height: 12, borderRadius: "50%",
-                        background: SUPPLIER_COLORS[idx],
-                        boxShadow: `0 0 0 3px ${SUPPLIER_COLORS[idx]}30`,
+                        background: color,
+                        boxShadow: `0 0 0 3px ${color}30`,
                         flexShrink: 0,
                       }} />
                       <div>
@@ -314,7 +542,7 @@ export default function RiskPage() {
                         padding: "2px 6px", borderRadius: 5,
                         background: rc.cell, color: rc.text,
                       }}>
-                        {RISK_LEVEL_LABELS[r.risk_level]}
+                        {RISK_LEVEL_LABELS[r.risk_level as RiskLevel]}
                       </div>
                     </div>
                   );
@@ -358,7 +586,7 @@ export default function RiskPage() {
                         {selectedRisk.risk_score}
                       </div>
                       <div style={{ fontSize: "0.65rem", color: getRiskColor(selectedRisk.risk_level).text, marginTop: 2, fontWeight: 600 }}>
-                        {RISK_LEVEL_LABELS[selectedRisk.risk_level]}
+                        {RISK_LEVEL_LABELS[selectedRisk.risk_level as RiskLevel]}
                       </div>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -377,10 +605,11 @@ export default function RiskPage() {
                   {/* Badges */}
                   <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
                     <span style={{
-                      background: TIER_COLORS[selectedRisk.tier].bg, color: TIER_COLORS[selectedRisk.tier].text,
+                      background: selectedRisk.tier ? TIER_COLORS[selectedRisk.tier as SupplierTier]?.bg || "#EAF1FB" : "#EAF1FB",
+                      color: selectedRisk.tier ? TIER_COLORS[selectedRisk.tier as SupplierTier]?.text || "#5F7A9B" : "#5F7A9B",
                       padding: "2px 8px", borderRadius: 5, fontSize: "0.72rem", fontWeight: 700,
                     }}>
-                      {TIER_LABELS[selectedRisk.tier]}
+                      {selectedRisk.tier ? TIER_LABELS[selectedRisk.tier as SupplierTier] : "—"}
                     </span>
                     <span style={{ background: "#EDF3FA", color: "#5B8FD9", padding: "2px 8px", borderRadius: 5, fontSize: "0.72rem", fontWeight: 600 }}>
                       {selectedRisk.category}
@@ -394,7 +623,7 @@ export default function RiskPage() {
                     <i className="bi bi-exclamation-triangle-fill" style={{ marginRight: 5 }} />
                     主要風險因子
                   </div>
-                  {selectedRisk.risk_factors.map((f, i) => (
+                  {selectedRisk.risk_factors.map((f: string, i: number) => (
                     <div key={i} style={{
                       display: "flex", gap: 8, marginBottom: 6,
                       fontSize: "0.78rem", color: "#5F7A9B", lineHeight: 1.5,
@@ -428,6 +657,14 @@ export default function RiskPage() {
                       <div style={{ color: "#1E3A5F", fontFamily: "monospace" }}>{selectedRisk.last_reviewed}</div>
                     </div>
                   </div>
+                </div>
+                <div style={{ padding: "12px 18px", borderTop: "1px solid #EAF1FB", display: "flex", gap: 10, justifyContent: "flex-end", background: "#FAFCFF" }}>
+                  <button className="ev-btn ev-btn-secondary" style={{ padding: "4px 10px", fontSize: "0.75rem" }} onClick={() => openEditModal(selectedRisk)}>
+                    <i className="bi bi-pencil-fill" /> 編輯
+                  </button>
+                  <button className="ev-btn ev-btn-ghost" style={{ padding: "4px 10px", fontSize: "0.75rem", color: "#EF4444" }} onClick={() => handleDeleteRisk(selectedRisk.supplier_id)}>
+                    <i className="bi bi-trash-fill" /> 刪除
+                  </button>
                 </div>
               </div>
             ) : (
@@ -489,12 +726,15 @@ export default function RiskPage() {
                   <th>負責人</th>
                   <th>緩解措施</th>
                   <th style={{ textAlign: "center" }}>最後複評</th>
+                  <th style={{ textAlign: "center" }}>操作</th>
                 </tr>
               </thead>
               <tbody>
-                {SUPPLIER_RISKS.slice().sort((a, b) => b.risk_score - a.risk_score).map((r, idx) => {
+                {filtered.slice().sort((a, b) => b.risk_score - a.risk_score).map((r) => {
                   const rc = getRiskColor(r.risk_level);
-                  const tc = TIER_COLORS[r.tier];
+                  const tc = TIER_COLORS[r.tier as SupplierTier];
+                  const supplierIdx = risks.findIndex((s) => s.supplier_id === r.supplier_id);
+                  const color = supplierIdx >= 0 ? SUPPLIER_COLORS[supplierIdx % SUPPLIER_COLORS.length] : "#8B5CF6";
                   return (
                     <tr
                       key={r.supplier_id}
@@ -515,8 +755,8 @@ export default function RiskPage() {
                         </span>
                       </td>
                       <td style={{ textAlign: "center" }}>
-                        <span style={{ background: tc.bg, color: tc.text, padding: "2px 10px", borderRadius: 5, fontSize: "0.78rem", fontWeight: 700 }}>
-                          {TIER_LABELS[r.tier]}
+                        <span style={{ background: tc?.bg || "#EAF1FB", color: tc?.text || "#5F7A9B", padding: "2px 10px", borderRadius: 5, fontSize: "0.78rem", fontWeight: 700 }}>
+                          {r.tier ? TIER_LABELS[r.tier as SupplierTier] : "—"}
                         </span>
                       </td>
                       <td style={{ textAlign: "center", fontWeight: 700, color: "#1E3A5F", fontSize: "1rem" }}>
@@ -545,7 +785,7 @@ export default function RiskPage() {
                           fontSize: "0.78rem", fontWeight: 700,
                           border: `1px solid ${rc.border}40`,
                         }}>
-                          {RISK_LEVEL_LABELS[r.risk_level]}
+                          {RISK_LEVEL_LABELS[r.risk_level as RiskLevel]}
                         </span>
                       </td>
                       <td style={{ fontSize: "0.82rem", color: "#5F7A9B" }}>{r.owner}</td>
@@ -557,11 +797,161 @@ export default function RiskPage() {
                       <td style={{ textAlign: "center", fontFamily: "monospace", fontSize: "0.78rem", color: "#5F7A9B" }}>
                         {r.last_reviewed}
                       </td>
+                      <td style={{ textAlign: "center" }}>
+                        <div style={{ display: "flex", gap: 6, alignItems: "center", justifyContent: "center" }}>
+                          <button 
+                            className="ev-btn ev-btn-ghost" 
+                            style={{ padding: "4px 8px", fontSize: "0.75rem", color: "#5B8FD9" }}
+                            onClick={(e) => { e.stopPropagation(); openEditModal(r); }}
+                            title="編輯"
+                          >
+                            <i className="bi bi-pencil-fill" />
+                          </button>
+                          <button 
+                            className="ev-btn ev-btn-ghost" 
+                            style={{ padding: "4px 8px", fontSize: "0.75rem", color: "#EF4444" }}
+                            onClick={(e) => { e.stopPropagation(); handleDeleteRisk(r.supplier_id); }}
+                            title="刪除"
+                          >
+                            <i className="bi bi-trash-fill" />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {showModal && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+          backgroundColor: "rgba(30,58,95,0.4)", backdropFilter: "blur(4px)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+        }}>
+          <div className="ev-card" style={{
+            width: "100%", maxWidth: 600, maxHeight: "90vh", overflowY: "auto",
+            padding: 24, boxShadow: "0 10px 30px rgba(30,58,95,0.15)",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#1E3A5F" }}>
+                {editingRisk ? "編輯風險評估" : "新增風險評估"}
+              </div>
+              <button 
+                type="button"
+                onClick={() => setShowModal(false)}
+                style={{ background: "none", border: "none", color: "#94AEC8", fontSize: "1.2rem", cursor: "pointer" }}
+              >
+                <i className="bi bi-x-lg" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveRisk}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 18 }}>
+                <div style={{ gridColumn: "span 2" }}>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>供應商 *</label>
+                  {editingRisk ? (
+                    <div style={{ padding: "8px 12px", background: "#EDF3FA", borderRadius: 6, fontWeight: 700, color: "#1E3A5F" }}>
+                      {editingRisk.supplier_name} ({editingRisk.supplier_code})
+                    </div>
+                  ) : (
+                    <select 
+                      className="ev-select" style={{ width: "100%" }}
+                      value={newRisk.supplier_id} onChange={(e) => setNewRisk({...newRisk, supplier_id: e.target.value})}
+                    >
+                      {SUPPLIERS.map((s) => (
+                        <option key={s.id} value={s.id}>{s.code}　{s.name}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>發生可能性 (Likelihood) *</label>
+                  <select 
+                    className="ev-select" style={{ width: "100%" }}
+                    value={newRisk.likelihood} onChange={(e) => setNewRisk({...newRisk, likelihood: Number(e.target.value)})}
+                  >
+                    {[1, 2, 3, 4, 5].map((num) => (
+                      <option key={num} value={num}>{num} - {LIKELIHOOD_LABELS[num]}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>影響程度 (Impact) *</label>
+                  <select 
+                    className="ev-select" style={{ width: "100%" }}
+                    value={newRisk.impact} onChange={(e) => setNewRisk({...newRisk, impact: Number(e.target.value)})}
+                  >
+                    {[1, 2, 3, 4, 5].map((num) => (
+                      <option key={num} value={num}>{num} - {IMPACT_LABELS[num]}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>負責人 *</label>
+                  <input 
+                    className="ev-input" style={{ width: "100%" }} required
+                    value={newRisk.owner} onChange={(e) => setNewRisk({...newRisk, owner: e.target.value})}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>最後複評日期 *</label>
+                  <input 
+                    type="date" className="ev-input" style={{ width: "100%" }} required
+                    value={newRisk.last_reviewed} onChange={(e) => setNewRisk({...newRisk, last_reviewed: e.target.value})}
+                  />
+                </div>
+
+                <div style={{ gridColumn: "span 2" }}>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>風險因素 (每行代表一個因子) *</label>
+                  <textarea 
+                    className="ev-input" style={{ width: "100%", height: 70, resize: "none", fontFamily: "inherit" }} required
+                    placeholder="請輸入風險因子，例如：&#10;供料高度集中：300 mm 晶圓單一來源&#10;地緣政治停產風險"
+                    value={newRisk.risk_factors_text} onChange={(e) => setNewRisk({...newRisk, risk_factors_text: e.target.value})}
+                  />
+                </div>
+
+                <div style={{ gridColumn: "span 2" }}>
+                  <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>緩解措施 *</label>
+                  <textarea 
+                    className="ev-input" style={{ width: "100%", height: 60, resize: "none", fontFamily: "inherit" }} required
+                    value={newRisk.mitigation} onChange={(e) => setNewRisk({...newRisk, mitigation: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              {/* 動態計算區塊 */}
+              <div style={{
+                background: "#EDF3FA", borderRadius: 8, padding: "12px 16px", marginBottom: 18,
+                display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.85rem"
+              }}>
+                <span style={{ fontWeight: 600, color: "#1E3A5F" }}>自動風險計算：</span>
+                <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+                  <span>分數：<strong style={{ fontSize: "1.1rem", color: "#1E3A5F" }}>{newRisk.likelihood * newRisk.impact}</strong> 分</span>
+                  <span>
+                    等級：
+                    <span className="ev-badge" style={{
+                      background: getRiskColor(calculatedLevel).cell, color: getRiskColor(calculatedLevel).text,
+                      padding: "3px 10px", borderRadius: 6, fontWeight: 700, border: `1px solid ${getRiskColor(calculatedLevel).border}40`
+                    }}>
+                      {RISK_LEVEL_LABELS[calculatedLevel]}
+                    </span>
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", borderTop: "1px solid #EAF1FB", paddingTop: 16 }}>
+                <button type="button" className="ev-btn ev-btn-ghost" onClick={() => setShowModal(false)}>取消</button>
+                <button type="submit" className="ev-btn ev-btn-primary">確認儲存</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
