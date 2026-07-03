@@ -299,7 +299,8 @@ export default function AuditPage() {
     };
 
     if (typeof window !== "undefined") {
-      if (editingEvent.id.startsWith("ae-")) {
+      const isCustom = editingEvent.id.startsWith("ae-") && !AUDIT_EVENTS.some((e) => e.id === editingEvent.id);
+      if (isCustom) {
         const customSaved = localStorage.getItem("audits-custom");
         if (customSaved) {
           try {
@@ -330,7 +331,8 @@ export default function AuditPage() {
     if (!confirm("確定要刪除此稽核行程事項嗎？")) return;
 
     if (typeof window !== "undefined") {
-      if (eventId.startsWith("ae-")) {
+      const isCustom = eventId.startsWith("ae-") && !AUDIT_EVENTS.some((e) => e.id === eventId);
+      if (isCustom) {
         const customSaved = localStorage.getItem("audits-custom");
         if (customSaved) {
           try {
