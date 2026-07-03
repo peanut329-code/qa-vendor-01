@@ -33,6 +33,7 @@ export default function EvaluationsPage() {
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<any | "ALL">("ALL");
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "score_desc" | "score_asc">("newest");
   const [refreshKey, setRefreshKey] = useState(0);
   const [evalList, setEvalList] = useState<any[]>([]);
 
@@ -101,7 +102,21 @@ export default function EvaluationsPage() {
       const matchSearch = !search || e.supplier_name.includes(search) || e.supplier_code.includes(search);
       return matchStatus && matchSearch;
     })
-    .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+    .sort((a, b) => {
+      if (sortBy === "newest") {
+        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      }
+      if (sortBy === "oldest") {
+        return new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime();
+      }
+      if (sortBy === "score_desc") {
+        return (b.total_score ?? 0) - (a.total_score ?? 0);
+      }
+      if (sortBy === "score_asc") {
+        return (a.total_score ?? 0) - (b.total_score ?? 0);
+      }
+      return 0;
+    });
 
   const counts: Record<string, number> = { ALL: evalList.length };
   evalList.forEach((e) => {
@@ -213,15 +228,38 @@ export default function EvaluationsPage() {
             </button>
           ))}
           <div style={{ flex: 1, display: "flex", justifyContent: "flex-end", alignItems: "center", padding: "0 8px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <i className="bi bi-search" style={{ color: "#94AEC8", fontSize: "0.85rem" }} />
-              <input
-                className="ev-input"
-                placeholder="搜尋供應商..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                style={{ width: 200, border: "none", padding: "4px 0", boxShadow: "none" }}
-              />
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              {/* 排序選擇 */}
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <i className="bi bi-sort-down" style={{ color: "#94AEC8", fontSize: "0.9rem" }} />
+                <select
+                  className="ev-select"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  style={{ 
+                    border: "none", background: "transparent", padding: "4px 8px 4px 4px",
+                    fontSize: "0.82rem", fontWeight: 600, color: "#5F7A9B", cursor: "pointer",
+                    outline: "none"
+                  }}
+                >
+                  <option value="newest">更新時間：由新到舊</option>
+                  <option value="oldest">更新時間：由舊到新</option>
+                  <option value="score_desc">評鑑分數：由高到低</option>
+                  <option value="score_asc">評鑑分數：由低到高</option>
+                </select>
+              </div>
+
+              {/* 搜尋輸入 */}
+              <div style={{ display: "flex", alignItems: "center", gap: 6, borderLeft: "1px solid #EAF1FB", paddingLeft: 16 }}>
+                <i className="bi bi-search" style={{ color: "#94AEC8", fontSize: "0.85rem" }} />
+                <input
+                  className="ev-input"
+                  placeholder="搜尋供應商..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  style={{ width: 150, border: "none", padding: "4px 0", boxShadow: "none" }}
+                />
+              </div>
             </div>
           </div>
         </div>
