@@ -11,11 +11,17 @@ import type { AuditEventType, AuditEventStatus } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { exportAuditEventsToExcel } from "@/lib/export";
 
-// 動態獲取當前真實日期
+// 動態獲取當前真實日期與未來6個月期限
 const now = new Date();
 const TODAY_YEAR = now.getFullYear();
 const TODAY_MONTH = now.getMonth() + 1;
 const TODAY = `${TODAY_YEAR}-${String(TODAY_MONTH).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+const futureLimitDate = new Date();
+futureLimitDate.setMonth(futureLimitDate.getMonth() + 6);
+const FUTURE_LIMIT_YEAR = futureLimitDate.getFullYear();
+const FUTURE_LIMIT_MONTH = futureLimitDate.getMonth() + 1;
+const FUTURE_LIMIT = `${FUTURE_LIMIT_YEAR}-${String(FUTURE_LIMIT_MONTH).padStart(2, "0")}-${String(futureLimitDate.getDate()).padStart(2, "0")}`;
 
 const WEEKDAY_LABELS = ["日", "一", "二", "三", "四", "五", "六"];
 const MONTH_LABELS = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
@@ -141,9 +147,9 @@ export default function AuditPage() {
   const pendingEvents = useMemo(() => {
     const list: any[] = [];
     
-    // 1. 品質認證效期到期掃描 (2026-07-03 至 2026-12-31)
+    // 1. 品質認證效期到期掃描 (TODAY 至 FUTURE_LIMIT)
     CERTIFICATIONS.forEach((c) => {
-      if (c.expiry_date >= "2026-07-03" && c.expiry_date <= "2026-12-31") {
+      if (c.expiry_date >= TODAY && c.expiry_date <= FUTURE_LIMIT) {
         const isScheduled = eventsList.some((e) => e.related_id === c.id);
         const isIgnored = dismissedIds.includes(`cert-${c.id}`);
         if (!isScheduled && !isIgnored) {
@@ -162,9 +168,9 @@ export default function AuditPage() {
       }
     });
 
-    // 2. SCAR 矯正回覆截止掃描 (2026-07-03 至 2026-12-31)
+    // 2. SCAR 矯正回覆截止掃描 (TODAY 至 FUTURE_LIMIT)
     SCARS.forEach((s) => {
-      if (s.target_date >= "2026-07-03" && s.target_date <= "2026-12-31" && s.status !== "closed") {
+      if (s.target_date >= TODAY && s.target_date <= FUTURE_LIMIT && s.status !== "closed") {
         const isScheduled = eventsList.some((e) => e.related_id === s.id);
         const isIgnored = dismissedIds.includes(`scar-${s.id}`);
         if (!isScheduled && !isIgnored) {
@@ -183,9 +189,9 @@ export default function AuditPage() {
       }
     });
 
-    // 3. ASL 年度合格資格複評掃描 (2026-07-03 至 2026-12-31)
+    // 3. ASL 年度合格資格複評掃描 (TODAY 至 FUTURE_LIMIT)
     ASL_RECORDS.forEach((r) => {
-      if (r.review_date >= "2026-07-03" && r.review_date <= "2026-12-31") {
+      if (r.review_date >= TODAY && r.review_date <= FUTURE_LIMIT) {
         const isScheduled = eventsList.some((e) => e.supplier_id === r.supplier_id && e.event_type === "evaluation" && e.date === r.review_date);
         const isIgnored = dismissedIds.includes(`asl-${r.id}`);
         if (!isScheduled && !isIgnored) {
