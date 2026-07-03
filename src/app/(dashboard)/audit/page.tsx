@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { AUDIT_EVENTS, SUPPLIERS } from "@/lib/mock-data";
+import { AUDIT_EVENTS, SUPPLIERS, CERTIFICATIONS, SCARS, ASL_RECORDS } from "@/lib/mock-data";
 import type { AuditEvent } from "@/types";
 import { getAuditEventColor } from "@/lib/utils";
 import { AUDIT_EVENT_TYPE_LABELS, AUDIT_EVENT_STATUS_LABELS } from "@/types";
@@ -54,11 +54,15 @@ export default function AuditPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("calendar");
   const [typeFilter, setTypeFilter] = useState<AuditEventType | "ALL">("ALL");
   const [monthFilter, setMonthFilter] = useState<string | "ALL">("ALL");
+  const [showPendingInbox, setShowPendingInbox] = useState(false);
 
   const [eventsList, setEventsList] = useState<AuditEvent[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<any | null>(null);
   const [suppliersList, setSuppliersList] = useState<any[]>([]);
+  
+  const [dismissedIds, setDismissedIds] = useState<string[]>([]);
+
   const [newEvent, setNewEvent] = useState({
     title: "",
     supplier_id: "",
@@ -95,6 +99,13 @@ export default function AuditPage() {
         try { editedMap = JSON.parse(editedSaved); } catch (e) {}
       }
 
+      const savedDismissed = localStorage.getItem("audits-dismissed");
+      if (savedDismissed) {
+        try {
+          setDismissedIds(JSON.parse(savedDismissed));
+        } catch (e) {}
+      }
+
       const allEvents = [...AUDIT_EVENTS, ...customAudits];
       const updatedEvents = allEvents
         .filter((e) => !deletedIds.includes(e.id))
@@ -125,6 +136,111 @@ export default function AuditPage() {
       }
     }
   }, []);
+
+  // 待排定確認行程自動掃描
+  const pendingEvents = useMemo(() => {
+    const list: any[] = [];
+    
+    // 1. 品質認證效期到期掃描 (2026-07-03 至 2026-12-31)
+    CERTIFICATIONS.forEach((c) => {
+      if (c.expiry_date >= "2026-07-03" && c.expiry_date <= "2026-12-31") {
+        const isScheduled = eventsList.some((e) => e.related_id === c.id);
+        const isIgnored = dismissedIds.includes(`cert-${c.id}`);
+        if (!isScheduled && !isIgnored) {
+          list.push({
+            id: `cert-${c.id}`,
+            source_id: c.id,
+            type: "cert_review",
+            title: `${c.supplier_name} ${c.cert_type} 到期複查`,
+            date: c.expiry_date,
+            supplier_id: c.supplier_id,
+            supplier_name: c.supplier_name,
+            supplier_code: c.supplier_code,
+            notes: `${c.issued_by} ${c.cert_type} 有效期屆滿，證書號：${c.cert_number}。`
+          });
+        }
+      }
+    });
+
+    // 2. SCAR 矯正回覆截止掃描 (2026-07-03 至 2026-12-31)
+    SCARS.forEach((s) => {
+      if (s.target_date >= "2026-07-03" && s.target_date <= "2026-12-31" && s.status !== "closed") {
+        const isScheduled = eventsList.some((e) => e.related_id === s.id);
+        const isIgnored = dismissedIds.includes(`scar-${s.id}`);
+        if (!isScheduled && !isIgnored) {
+          list.push({
+            id: `scar-${s.id}`,
+            source_id: s.id,
+            type: "scar_due",
+            title: `${s.supplier_name} SCAR 矯正回覆截止`,
+            date: s.target_date,
+            supplier_id: s.supplier_id,
+            supplier_name: s.supplier_name,
+            supplier_code: s.supplier_code,
+            notes: `確認 ${s.scar_number} 改善進度。問題描述：${s.issue_description.slice(0, 35)}...`
+          });
+        }
+      }
+    });
+
+    // 3. ASL 年度合格資格複評掃描 (2026-07-03 至 2026-12-31)
+    ASL_RECORDS.forEach((r) => {
+      if (r.review_date >= "2026-07-03" && r.review_date <= "2026-12-31") {
+        const isScheduled = eventsList.some((e) => e.supplier_id === r.supplier_id && e.event_type === "evaluation" && e.date === r.review_date);
+        const isIgnored = dismissedIds.includes(`asl-${r.id}`);
+        if (!isScheduled && !isIgnored) {
+          list.push({
+            id: `asl-${r.id}`,
+            source_id: r.id,
+            type: "evaluation",
+            title: `${r.supplier_name} ASL 資格年度複評`,
+            date: r.review_date,
+            supplier_id: r.supplier_id,
+            supplier_name: r.supplier_name,
+            supplier_code: r.supplier_code,
+            notes: `合格供應商核准範圍到期年度定期複審。核准範圍：${r.scope.slice(0, 25)}...`
+          });
+        }
+      }
+    });
+
+    return list;
+  }, [eventsList, dismissedIds]);
+
+  function handleApprovePending(item: any) {
+    const itemToAdd = {
+      id: `ae-${Date.now()}`,
+      title: item.title,
+      supplier_id: item.supplier_id,
+      supplier_name: item.supplier_name,
+      supplier_code: item.supplier_code,
+      event_type: item.type as AuditEventType,
+      date: item.date,
+      status: "scheduled" as AuditEventStatus,
+      notes: item.notes,
+      related_id: item.source_id,
+    };
+
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("audits-custom");
+      let current: any[] = [];
+      if (saved) {
+        try { current = JSON.parse(saved); } catch (e) {}
+      }
+      current.push(itemToAdd);
+      localStorage.setItem("audits-custom", JSON.stringify(current));
+    }
+
+    setEventsList((prev) => [...prev, itemToAdd]);
+  }
+
+  function handleDismissPending(id: string) {
+    const nextIgnored = [...dismissedIds, id];
+    setDismissedIds(nextIgnored);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("audits-dismissed", JSON.stringify(nextIgnored));
+    }
+  }
 
   function handleStatusChange(eventId: string, newStatus: AuditEventStatus) {
     if (typeof window !== "undefined") {
@@ -379,6 +495,102 @@ export default function AuditPage() {
           </button>
         </div>
       </div>
+
+      {/* 待排定稽核行程自動偵測確認區 */}
+      {pendingEvents.length > 0 && (
+        <div 
+          style={{
+            background: "rgba(240, 247, 255, 0.85)",
+            backdropFilter: "blur(4px)",
+            border: "1px solid #D2E5FC",
+            borderRadius: 12,
+            padding: "14px 18px",
+            marginBottom: 20,
+            boxShadow: "0 4px 15px rgba(91,143,217,0.08)",
+            transition: "all 0.25s",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: "#D2E5FC", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <i className="bi bi-lightbulb-fill" style={{ color: "#3A6FBF", fontSize: "1rem" }} />
+              </div>
+              <div>
+                <div style={{ fontSize: "0.88rem", fontWeight: 800, color: "#1E3A5F" }}>
+                  💡 系統偵測到有 {pendingEvents.length} 筆品質與認證事件待排入 2026-H2 稽核行事曆
+                </div>
+                <div style={{ fontSize: "0.72rem", color: "#5F7A9B", marginTop: 2 }}>
+                  系統已為您自動比對過期日期，並依據 SCAR 期限、證書過期日與 ASL 下次複評日生成預設事項。
+                </div>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button 
+                className="ev-btn ev-btn-ghost" 
+                onClick={() => setShowPendingInbox(!showPendingInbox)}
+                style={{ padding: "5px 12px", fontSize: "0.78rem", background: "white", border: "1px solid #C5D8F0" }}
+              >
+                {showPendingInbox ? "收合待辦" : `展開查看 (${pendingEvents.length})`}
+              </button>
+            </div>
+          </div>
+
+          {showPendingInbox && (
+            <div style={{ marginTop: 14, borderTop: "1px solid #D2E5FC", paddingTop: 12, overflowX: "auto" }}>
+              <table className="ev-table" style={{ fontSize: "0.8rem", background: "white", borderRadius: 8 }}>
+                <thead>
+                  <tr>
+                    <th style={{ width: 110 }}>建議日期</th>
+                    <th style={{ width: 120 }}>事項類型</th>
+                    <th>事項名稱</th>
+                    <th>關聯供應商</th>
+                    <th style={{ width: 130, textAlign: "right" }}>操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pendingEvents.map((item) => {
+                    const c = getAuditEventColor(item.type);
+                    return (
+                      <tr key={item.id} style={{ transition: "all 0.15s" }}>
+                        <td style={{ fontFamily: "monospace", fontWeight: 700, color: "#1E3A5F" }}>{item.date}</td>
+                        <td>
+                          <span className={`ev-badge ${c.bg} ${c.text}`} style={{ padding: "2px 6px", fontSize: "0.7rem" }}>
+                            <span className="ev-badge-dot" style={{ background: c.accent }} />
+                            {AUDIT_EVENT_TYPE_LABELS[item.type as AuditEventType]}
+                          </span>
+                        </td>
+                        <td style={{ fontWeight: 600, color: "#1E3A5F" }}>{item.title}</td>
+                        <td>
+                          <div style={{ fontWeight: 500, color: "#5F7A9B" }}>{item.supplier_name}</div>
+                          <div style={{ fontSize: "0.68rem", color: "#94AEC8", fontFamily: "monospace" }}>{item.supplier_code}</div>
+                        </td>
+                        <td style={{ textAlign: "right" }}>
+                          <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                            <button 
+                              onClick={() => handleApprovePending(item)}
+                              className="ev-btn ev-btn-primary" 
+                              style={{ padding: "4px 8px", fontSize: "0.72rem", background: "#22C55E", border: "none" }}
+                            >
+                              <i className="bi bi-check-lg" /> 排入
+                            </button>
+                            <button 
+                              onClick={() => handleDismissPending(item.id)}
+                              className="ev-btn ev-btn-ghost" 
+                              style={{ padding: "4px 8px", fontSize: "0.72rem", color: "#EF4444" }}
+                            >
+                              忽略
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Event type stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20 }}>
