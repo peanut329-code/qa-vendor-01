@@ -566,6 +566,52 @@ export const AUDIT_EVENTS: AuditEvent[] = [
     related_id: "cert-10",
   },
 
+  // ── 七月 ──
+  {
+    id: "ae-08", title: "ISO/IEC 17025 到期複查 — 光揚光罩科技",
+    supplier_id: "s3", supplier_name: "光揚光罩科技股份有限公司", supplier_code: "SUP-003",
+    event_type: "cert_review", date: "2026-07-10", status: "scheduled",
+    notes: "TAF 實驗室認證屆滿，需向 TAF 申請換發",
+    related_id: "cert-08",
+  },
+  {
+    id: "ae-09", title: "先進製程化學品 SCAR 矯正回覆截止",
+    supplier_id: "s5", supplier_name: "先進製程化學品股份有限公司", supplier_code: "SUP-005",
+    event_type: "scar_due", date: "2026-07-31", status: "scheduled",
+    notes: "確認 SCAR-2026-002 改善報告，溫濕度監控系統與 SPC 管制落實狀況",
+    related_id: "sc1",
+  },
+  {
+    id: "ae-10", title: "ISO 9001 到期複查 — 品晶半導體材料",
+    supplier_id: "s1", supplier_name: "品晶半導體材料股份有限公司", supplier_code: "SUP-001",
+    event_type: "cert_review", date: "2026-07-31", status: "scheduled",
+    notes: "BSI ISO 9001:2015 有效期屆滿，確認換版為 ISO 9001:2025",
+    related_id: "cert-02",
+  },
+
+  // ── 八月 ──
+  {
+    id: "ae-11", title: "ISO 9001 到期複查 — 光揚光罩科技",
+    supplier_id: "s3", supplier_name: "光揚光罩科技股份有限公司", supplier_code: "SUP-003",
+    event_type: "cert_review", date: "2026-08-15", status: "scheduled",
+    notes: "ISO 9001:2015 有效期限屆滿，確認換證審查進度",
+    related_id: "cert-07",
+  },
+
+  // ── 十二月 ──
+  {
+    id: "ae-12", title: "ISO 9001 到期複查 — 正鑫特殊氣體",
+    supplier_id: "s2", supplier_name: "正鑫特殊氣體有限公司", supplier_code: "SUP-002",
+    event_type: "cert_review", date: "2026-12-14", status: "scheduled",
+    notes: "ISO 9001:2015 證書到期，需提交換證申請",
+    related_id: "cert-05",
+  },
+  {
+    id: "ae-13", title: "光揚光罩科技 ASL 資格年度複評",
+    supplier_id: "s3", supplier_name: "光揚光罩科技股份有限公司", supplier_code: "SUP-003",
+    event_type: "evaluation", date: "2026-12-31", status: "scheduled",
+    notes: "ASL 資格到期複評，重點評估交期改善與品質穩定度",
+  },
 ];
 
 // ================================================================
