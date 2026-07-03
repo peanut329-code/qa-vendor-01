@@ -49,7 +49,15 @@ export default function ReportsPage() {
           custom = JSON.parse(savedCustom);
         } catch (e) {}
       }
-      setEvalList([...updated, ...custom]);
+      
+      const merged = [...updated, ...custom];
+      const ordered = merged
+        .sort((a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime())
+        .map((e, idx) => ({
+          ...e,
+          evl_code: `EVL-${String(idx + 1).padStart(3, "0")}`
+        }));
+      setEvalList(ordered);
     }
   }, []);
 
@@ -387,7 +395,7 @@ export default function ReportsPage() {
                     <tbody>
                       {completedEvals.map((e) => (
                         <tr key={e.id}>
-                          <td style={{ fontFamily: "monospace", color: "#5F7A9B" }}>{e.id.startsWith("e") && !isNaN(Number(e.id.substring(1))) ? `EVL-${e.id.substring(1).padStart(3, "0")}` : e.id}</td>
+                          <td style={{ fontFamily: "monospace", color: "#5F7A9B" }}>{e.evl_code || e.id}</td>
                           <td style={{ fontWeight: 600, color: "#1E3A5F" }}>{e.supplier_name}</td>
                           <td>{e.period}</td>
                           <td style={{ textAlign: "right", fontWeight: 700, color: "#5B8FD9" }}>{e.total_score?.toFixed(1) ?? "—"}</td>
@@ -489,7 +497,7 @@ export default function ReportsPage() {
                   <tbody>
                     {completedEvals.map((e) => (
                       <tr key={e.id}>
-                        <td style={{ fontFamily: "monospace", color: "#5F7A9B" }}>{e.id.startsWith("e") && !isNaN(Number(e.id.substring(1))) ? `EVL-${e.id.substring(1).padStart(3, "0")}` : e.id}</td>
+                        <td style={{ fontFamily: "monospace", color: "#5F7A9B" }}>{e.evl_code || e.id}</td>
                         <td style={{ fontWeight: 600, color: "#1E3A5F" }}>{e.supplier_name}</td>
                         <td>{e.period}</td>
                         <td style={{ textAlign: "right", fontWeight: 700, color: "#5B8FD9" }}>{e.total_score?.toFixed(1) ?? "—"}</td>
