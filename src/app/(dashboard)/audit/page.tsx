@@ -57,6 +57,7 @@ export default function AuditPage() {
 
   const [eventsList, setEventsList] = useState<AuditEvent[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<any | null>(null);
   const [suppliersList, setSuppliersList] = useState<any[]>([]);
   const [newEvent, setNewEvent] = useState({
     title: "",
@@ -81,14 +82,33 @@ export default function AuditPage() {
           customAudits = JSON.parse(savedAudits);
         } catch (e) {}
       }
+
+      const deletedSaved = localStorage.getItem("audits-deleted");
+      let deletedIds: string[] = [];
+      if (deletedSaved) {
+        try { deletedIds = JSON.parse(deletedSaved); } catch (e) {}
+      }
+
+      const editedSaved = localStorage.getItem("audits-edited");
+      let editedMap: Record<string, any> = {};
+      if (editedSaved) {
+        try { editedMap = JSON.parse(editedSaved); } catch (e) {}
+      }
+
       const allEvents = [...AUDIT_EVENTS, ...customAudits];
-      const updatedEvents = allEvents.map((e) => {
-        const savedStatus = localStorage.getItem(`audit-status-${e.id}`);
-        if (savedStatus) {
-          return { ...e, status: savedStatus as AuditEventStatus };
-        }
-        return e;
-      });
+      const updatedEvents = allEvents
+        .filter((e) => !deletedIds.includes(e.id))
+        .map((e) => {
+          let current = { ...e };
+          const savedStatus = localStorage.getItem(`audit-status-${e.id}`);
+          if (savedStatus) {
+            current.status = savedStatus as AuditEventStatus;
+          }
+          if (editedMap[e.id]) {
+            current = { ...current, ...editedMap[e.id] };
+          }
+          return current;
+        });
       setEventsList(updatedEvents);
 
       const savedSups = localStorage.getItem("suppliers-custom");
@@ -113,6 +133,110 @@ export default function AuditPage() {
     setEventsList((prev) =>
       prev.map((e) => (e.id === eventId ? { ...e, status: newStatus } : e))
     );
+  }
+
+  function openEditModal(event: AuditEvent) {
+    setEditingEvent(event);
+    setNewEvent({
+      title: event.title,
+      supplier_id: event.supplier_id,
+      event_type: event.event_type,
+      date: event.date,
+      notes: event.notes,
+    });
+    setShowAddModal(true);
+  }
+
+  function closeAddModal() {
+    setShowAddModal(false);
+    setEditingEvent(null);
+    setNewEvent({
+      title: "",
+      supplier_id: suppliersList.length > 0 ? suppliersList[0].id : "",
+      event_type: "audit_visit",
+      date: "",
+      notes: "",
+    });
+  }
+
+  function handleFormSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (editingEvent) {
+      handleSaveEdit();
+    } else {
+      handleAddAudit(e);
+    }
+  }
+
+  function handleSaveEdit() {
+    if (!editingEvent) return;
+    const targetSup = suppliersList.find((s) => s.id === newEvent.supplier_id);
+    const updated = {
+      ...editingEvent,
+      title: newEvent.title,
+      supplier_id: targetSup ? targetSup.id : "",
+      supplier_name: targetSup ? targetSup.name : "（全體）",
+      supplier_code: targetSup ? targetSup.code : "",
+      event_type: newEvent.event_type,
+      date: newEvent.date,
+      notes: newEvent.notes,
+    };
+
+    if (typeof window !== "undefined") {
+      if (editingEvent.id.startsWith("ae-")) {
+        const customSaved = localStorage.getItem("audits-custom");
+        if (customSaved) {
+          try {
+            const list = JSON.parse(customSaved);
+            const idx = list.findIndex((x: any) => x.id === editingEvent.id);
+            if (idx > -1) {
+              list[idx] = updated;
+              localStorage.setItem("audits-custom", JSON.stringify(list));
+            }
+          } catch (e) {}
+        }
+      } else {
+        const editedSaved = localStorage.getItem("audits-edited");
+        let editedMap: Record<string, any> = {};
+        if (editedSaved) {
+          try { editedMap = JSON.parse(editedSaved); } catch (e) {}
+        }
+        editedMap[editingEvent.id] = updated;
+        localStorage.setItem("audits-edited", JSON.stringify(editedMap));
+      }
+    }
+
+    setEventsList((prev) => prev.map((e) => (e.id === editingEvent.id ? updated : e)));
+    closeAddModal();
+  }
+
+  function handleDeleteEvent(eventId: string) {
+    if (!confirm("確定要刪除此稽核行程事項嗎？")) return;
+
+    if (typeof window !== "undefined") {
+      if (eventId.startsWith("ae-")) {
+        const customSaved = localStorage.getItem("audits-custom");
+        if (customSaved) {
+          try {
+            let list = JSON.parse(customSaved);
+            list = list.filter((x: any) => x.id !== eventId);
+            localStorage.setItem("audits-custom", JSON.stringify(list));
+          } catch (e) {}
+        }
+      } else {
+        const deletedSaved = localStorage.getItem("audits-deleted");
+        let deletedList: string[] = [];
+        if (deletedSaved) {
+          try { deletedList = JSON.parse(deletedSaved); } catch (e) {}
+        }
+        if (!deletedList.includes(eventId)) {
+          deletedList.push(eventId);
+          localStorage.setItem("audits-deleted", JSON.stringify(deletedList));
+        }
+      }
+    }
+
+    setEventsList((prev) => prev.filter((e) => e.id !== eventId));
   }
 
   if (!user || !["super_admin", "admin", "manager", "viewer"].includes(user.role)) {
@@ -429,11 +553,33 @@ export default function AuditPage() {
                             borderLeft: `3px solid ${c.accent}`,
                           }}
                         >
-                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                            <i className={`bi ${c.icon}`} style={{ color: c.accent, fontSize: "0.85rem" }} />
-                            <span style={{ fontSize: "0.72rem", color: c.text, fontWeight: 700 }}>
-                              {AUDIT_EVENT_TYPE_LABELS[ev.event_type]}
-                            </span>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                              <i className={`bi ${c.icon}`} style={{ color: c.accent, fontSize: "0.85rem" }} />
+                              <span style={{ fontSize: "0.72rem", color: c.text, fontWeight: 700 }}>
+                                {AUDIT_EVENT_TYPE_LABELS[ev.event_type]}
+                              </span>
+                            </div>
+                            {canEditStatus && (
+                              <div style={{ display: "flex", gap: 6 }}>
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); openEditModal(ev); }}
+                                  style={{ background: "none", border: "none", padding: 2, color: "#5B8FD9", cursor: "pointer", fontSize: "0.78rem" }}
+                                  title="編輯事項"
+                                >
+                                  <i className="bi bi-pencil-fill" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); handleDeleteEvent(ev.id); }}
+                                  style={{ background: "none", border: "none", padding: 2, color: "#EF4444", cursor: "pointer", fontSize: "0.78rem" }}
+                                  title="刪除事項"
+                                >
+                                  <i className="bi bi-trash-fill" />
+                                </button>
+                              </div>
+                            )}
                           </div>
                           <div style={{ fontWeight: 600, color: "#1E3A5F", fontSize: "0.85rem", marginBottom: 3 }}>
                             {ev.title}
@@ -694,11 +840,33 @@ export default function AuditPage() {
                         </div>
                       </td>
                       <td>
-                        {ev.related_id && (
-                          <button className="ev-btn ev-btn-ghost" style={{ padding: "4px 10px", fontSize: "0.75rem" }}>
-                            <i className="bi bi-link-45deg" />
-                          </button>
-                        )}
+                        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                          {ev.related_id && (
+                            <button className="ev-btn ev-btn-ghost" style={{ padding: "4px 10px", fontSize: "0.75rem" }} title="查看關聯">
+                              <i className="bi bi-link-45deg" />
+                            </button>
+                          )}
+                          {canEditStatus && (
+                            <>
+                              <button
+                                className="ev-btn ev-btn-ghost"
+                                style={{ padding: "4px 8px", fontSize: "0.75rem", color: "#5B8FD9" }}
+                                onClick={() => openEditModal(ev)}
+                                title="編輯"
+                              >
+                                <i className="bi bi-pencil-fill" />
+                              </button>
+                              <button
+                                className="ev-btn ev-btn-ghost"
+                                style={{ padding: "4px 8px", fontSize: "0.75rem", color: "#EF4444" }}
+                                onClick={() => handleDeleteEvent(ev.id)}
+                                title="刪除"
+                              >
+                                <i className="bi bi-trash-fill" />
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -726,17 +894,19 @@ export default function AuditPage() {
             boxShadow: "0 10px 30px rgba(30,58,95,0.15)",
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#1E3A5F" }}>新增稽核與行程事項</div>
+              <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#1E3A5F" }}>
+                {editingEvent ? "編輯稽核與行程事項" : "新增稽核與行程事項"}
+              </div>
               <button 
                 type="button"
-                onClick={() => setShowAddModal(false)}
+                onClick={closeAddModal}
                 style={{ background: "none", border: "none", color: "#94AEC8", fontSize: "1.2rem", cursor: "pointer" }}
               >
                 <i className="bi bi-x-lg" />
               </button>
             </div>
 
-            <form onSubmit={handleAddAudit}>
+            <form onSubmit={handleFormSubmit}>
               <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 18 }}>
                 <div>
                   <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>事項名稱 *</label>
@@ -787,8 +957,10 @@ export default function AuditPage() {
               </div>
 
               <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", borderTop: "1px solid #EAF1FB", paddingTop: 16 }}>
-                <button type="button" className="ev-btn ev-btn-ghost" onClick={() => setShowAddModal(false)}>取消</button>
-                <button type="submit" className="ev-btn ev-btn-primary">確認新增</button>
+                <button type="button" className="ev-btn ev-btn-ghost" onClick={closeAddModal}>取消</button>
+                <button type="submit" className="ev-btn ev-btn-primary">
+                  {editingEvent ? "儲存修改" : "確認新增"}
+                </button>
               </div>
             </form>
           </div>

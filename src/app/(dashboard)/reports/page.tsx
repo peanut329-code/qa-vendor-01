@@ -1,10 +1,11 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell,
 } from "recharts";
-import { SUPPLIERS, MONTHLY_TRENDS, TIER_DISTRIBUTION, CATEGORY_SCORES } from "@/lib/mock-data";
+import { SUPPLIERS, MONTHLY_TRENDS, TIER_DISTRIBUTION, CATEGORY_SCORES, EVALUATIONS } from "@/lib/mock-data";
 import { getTierColor } from "@/lib/utils";
 import { TIER_LABELS } from "@/types";
 import type { SupplierTier } from "@/types";
@@ -20,6 +21,50 @@ const NEEDS_ATTENTION = SUPPLIERS.filter((s) => s.tier === "C" || s.tier === "D"
 
 export default function ReportsPage() {
   const { user } = useAuth();
+  const [evalList, setEvalList] = useState<any[]>([]);
+  const [activeModal, setActiveModal] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const updated = EVALUATIONS.map((e) => {
+        let current = { ...e };
+        const savedStatus = localStorage.getItem(`eval-status-${e.id}`);
+        const savedDetail = localStorage.getItem(`eval-detail-${e.id}`);
+        if (savedStatus) {
+          current.status = savedStatus as any;
+        }
+        if (savedDetail) {
+          try {
+            const parsed = JSON.parse(savedDetail);
+            current = { ...current, ...parsed };
+          } catch (err) {}
+        }
+        return current;
+      });
+
+      const savedCustom = localStorage.getItem("evaluations-custom");
+      let custom: any[] = [];
+      if (savedCustom) {
+        try {
+          custom = JSON.parse(savedCustom);
+        } catch (e) {}
+      }
+      setEvalList([...updated, ...custom]);
+    }
+  }, []);
+
+  const completedEvals = evalList.filter(e => e.status === "completed" || e.status === "approved");
+
+  const avgScore = completedEvals.length > 0 
+    ? +(completedEvals.reduce((sum, e) => sum + (e.total_score || 0), 0) / completedEvals.length).toFixed(1)
+    : 82.6;
+
+  const topPerformers = completedEvals.filter(e => e.tier === "A" || e.tier === "B")
+    .sort((a, b) => (b.total_score || 0) - (a.total_score || 0));
+
+  const needsAttention = completedEvals.filter(e => e.tier === "C" || e.tier === "D")
+    .sort((a, b) => (a.total_score || 0) - (b.total_score || 0));
+
   const canExport = user && ["super_admin", "admin", "manager"].includes(user.role);
 
   return (
@@ -45,12 +90,29 @@ export default function ReportsPage() {
       {/* Summary stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 22 }}>
         {[
-          { label: "整體平均分數", value: "82.6", icon: "bi-graph-up", color: "#5B8FD9", bg: "#EDF5FF" },
-          { label: "優選供應商", value: "3", sub: "占 30%", icon: "bi-star-fill", color: "#22C55E", bg: "#DCFCE7" },
-          { label: "需要關注", value: "3", sub: "C+D 級", icon: "bi-exclamation-triangle-fill", color: "#F59E0B", bg: "#FEF3C7" },
-          { label: "本期完成評鑑", value: "8", sub: "共 10 件", icon: "bi-check2-all", color: "#8B5CF6", bg: "#EDE9FE" },
+          { key: "avg", label: "整體平均分數", value: avgScore.toFixed(1), icon: "bi-graph-up", color: "#5B8FD9", bg: "#EDF5FF", sub: "點擊查看計算來源" },
+          { key: "top", label: "優選供應商", value: String(topPerformers.length), sub: `占 ${completedEvals.length > 0 ? ((topPerformers.length / completedEvals.length) * 100).toFixed(0) : "0"}%`, icon: "bi-star-fill", color: "#22C55E", bg: "#DCFCE7" },
+          { key: "needs", label: "需要關注", value: String(needsAttention.length), sub: "C+D 級", icon: "bi-exclamation-triangle-fill", color: "#F59E0B", bg: "#FEF3C7" },
+          { key: "completed", label: "本期完成評鑑", value: String(completedEvals.length), sub: `共 ${evalList.length} 件`, icon: "bi-check2-all", color: "#8B5CF6", bg: "#EDE9FE" },
         ].map((s) => (
-          <div key={s.label} className="ev-card" style={{ padding: "16px 18px" }}>
+          <div 
+            key={s.label} 
+            className="ev-card" 
+            onClick={() => setActiveModal(s.key)}
+            style={{ 
+              padding: "16px 18px", 
+              cursor: "pointer", 
+              transition: "transform 0.15s, box-shadow 0.15s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 6px 20px rgba(91,143,217,0.12)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
               <span style={{ fontSize: "0.78rem", color: "#5F7A9B", fontWeight: 500 }}>{s.label}</span>
               <div
@@ -70,7 +132,10 @@ export default function ReportsPage() {
             <div className="score-display" style={{ fontSize: "1.6rem", fontWeight: 800, color: "#1E3A5F" }}>
               {s.value}
             </div>
-            {s.sub && <div style={{ fontSize: "0.75rem", color: "#5F7A9B", marginTop: 2 }}>{s.sub}</div>}
+            {s.sub && <div style={{ fontSize: "0.75rem", color: "#5F7A9B", marginTop: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span>{s.sub}</span>
+              <span style={{ fontSize: "0.68rem", color: s.color, opacity: 0.8 }}>查看 <i className="bi bi-chevron-right" /></span>
+            </div>}
           </div>
         ))}
       </div>
@@ -268,7 +333,191 @@ export default function ReportsPage() {
             </table>
           </div>
         </div>
-      </div>
+      {activeModal && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+          backgroundColor: "rgba(30,58,95,0.4)", backdropFilter: "blur(4px)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+        }}>
+          <div className="ev-card" style={{
+            width: "100%", maxWidth: 680, maxHeight: "85vh", overflowY: "auto",
+            padding: 24, boxShadow: "0 10px 30px rgba(30,58,95,0.15)",
+          }}>
+            {/* Modal Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <div style={{ fontSize: "1.15rem", fontWeight: 800, color: "#1E3A5F", display: "flex", alignItems: "center", gap: 8 }}>
+                <i className={`bi ${
+                  activeModal === "avg" ? "bi-graph-up" :
+                  activeModal === "top" ? "bi-star-fill" :
+                  activeModal === "needs" ? "bi-exclamation-triangle-fill" : "bi-check2-all"
+                }`} style={{
+                  color: 
+                    activeModal === "avg" ? "#5B8FD9" :
+                    activeModal === "top" ? "#22C55E" :
+                    activeModal === "needs" ? "#F59E0B" : "#8B5CF6"
+                }} />
+                {activeModal === "avg" && "整體平均分數計算來源"}
+                {activeModal === "top" && "優選供應商名單 (A/B級)"}
+                {activeModal === "needs" && "需要關注供應商名單 (C/D級)"}
+                {activeModal === "completed" && "本期完成評鑑清單"}
+              </div>
+              <button 
+                type="button"
+                onClick={() => setActiveModal(null)}
+                style={{ background: "none", border: "none", color: "#94AEC8", fontSize: "1.2rem", cursor: "pointer" }}
+              >
+                <i className="bi bi-x-lg" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div style={{ overflowX: "auto" }}>
+              {activeModal === "avg" && (
+                <div>
+                  <table className="ev-table" style={{ fontSize: "0.85rem" }}>
+                    <thead>
+                      <tr>
+                        <th>評鑑單號</th>
+                        <th>供應商名稱</th>
+                        <th>評鑑期間</th>
+                        <th style={{ textAlign: "right" }}>評鑑得分</th>
+                        <th>評鑑等級</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {completedEvals.map((e) => (
+                        <tr key={e.id}>
+                          <td style={{ fontFamily: "monospace", color: "#5F7A9B" }}>{e.id.startsWith("e") && !isNaN(Number(e.id.substring(1))) ? `EVL-${e.id.substring(1).padStart(3, "0")}` : e.id}</td>
+                          <td style={{ fontWeight: 600, color: "#1E3A5F" }}>{e.supplier_name}</td>
+                          <td>{e.period}</td>
+                          <td style={{ textAlign: "right", fontWeight: 700, color: "#5B8FD9" }}>{e.total_score?.toFixed(1) ?? "—"}</td>
+                          <td>
+                            <span className={`ev-badge ${getTierColor(e.tier as SupplierTier).bg} ${getTierColor(e.tier as SupplierTier).text}`} style={{ padding: "1px 6px", fontSize: "0.7rem" }}>
+                              {e.tier ? TIER_LABELS[e.tier as SupplierTier] : "—"}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div style={{
+                    marginTop: 16, padding: "12px 16px", background: "#EDF3FA", borderRadius: 8,
+                    fontSize: "0.85rem", color: "#1E3A5F", fontWeight: 600, display: "flex", justifyContent: "space-between"
+                  }}>
+                    <span>平均數計算公式：</span>
+                    <span>
+                      總得分之和 ({completedEvals.reduce((sum, e) => sum + (e.total_score || 0), 0).toFixed(1)} 分) 
+                      ÷ 評鑑件數 ({completedEvals.length} 件) 
+                      = <span style={{ fontSize: "1rem", color: "#5B8FD9", fontWeight: 800 }}>{avgScore.toFixed(1)} 分</span>
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {activeModal === "top" && (
+                <table className="ev-table" style={{ fontSize: "0.85rem" }}>
+                  <thead>
+                    <tr>
+                      <th>供應商代碼</th>
+                      <th>供應商名稱</th>
+                      <th>評鑑期間</th>
+                      <th style={{ textAlign: "right" }}>評鑑得分</th>
+                      <th>評鑑等級</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {topPerformers.map((e) => (
+                      <tr key={e.id}>
+                        <td style={{ fontFamily: "monospace", color: "#5F7A9B" }}>{e.supplier_code}</td>
+                        <td style={{ fontWeight: 600, color: "#1E3A5F" }}>{e.supplier_name}</td>
+                        <td>{e.period}</td>
+                        <td style={{ textAlign: "right", fontWeight: 700, color: "#22C55E" }}>{e.total_score?.toFixed(1) ?? "—"}</td>
+                        <td>
+                          <span className={`ev-badge ${getTierColor(e.tier as SupplierTier).bg} ${getTierColor(e.tier as SupplierTier).text}`} style={{ padding: "1px 6px", fontSize: "0.7rem" }}>
+                            {e.tier ? TIER_LABELS[e.tier as SupplierTier] : "—"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+
+              {activeModal === "needs" && (
+                <table className="ev-table" style={{ fontSize: "0.85rem" }}>
+                  <thead>
+                    <tr>
+                      <th>供應商代碼</th>
+                      <th>供應商名稱</th>
+                      <th>評鑑得分</th>
+                      <th>評鑑等級</th>
+                      <th>問題備註</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {needsAttention.map((e) => (
+                      <tr key={e.id}>
+                        <td style={{ fontFamily: "monospace", color: "#5F7A9B" }}>{e.supplier_code}</td>
+                        <td style={{ fontWeight: 600, color: "#1E3A5F" }}>{e.supplier_name}</td>
+                        <td style={{ fontWeight: 700, color: "#F59E0B" }}>{e.total_score?.toFixed(1) ?? "—"}</td>
+                        <td>
+                          <span className={`ev-badge ${getTierColor(e.tier as SupplierTier).bg} ${getTierColor(e.tier as SupplierTier).text}`} style={{ padding: "1px 6px", fontSize: "0.7rem" }}>
+                            {e.tier ? TIER_LABELS[e.tier as SupplierTier] : "—"}
+                          </span>
+                        </td>
+                        <td style={{ fontSize: "0.75rem", color: "#E07A5F", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={e.notes}>
+                          {e.notes || "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+
+              {activeModal === "completed" && (
+                <table className="ev-table" style={{ fontSize: "0.85rem" }}>
+                  <thead>
+                    <tr>
+                      <th>評鑑單號</th>
+                      <th>供應商名稱</th>
+                      <th>評鑑期間</th>
+                      <th style={{ textAlign: "right" }}>總分</th>
+                      <th>評鑑等級</th>
+                      <th>狀態</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {completedEvals.map((e) => (
+                      <tr key={e.id}>
+                        <td style={{ fontFamily: "monospace", color: "#5F7A9B" }}>{e.id.startsWith("e") && !isNaN(Number(e.id.substring(1))) ? `EVL-${e.id.substring(1).padStart(3, "0")}` : e.id}</td>
+                        <td style={{ fontWeight: 600, color: "#1E3A5F" }}>{e.supplier_name}</td>
+                        <td>{e.period}</td>
+                        <td style={{ textAlign: "right", fontWeight: 700, color: "#5B8FD9" }}>{e.total_score?.toFixed(1) ?? "—"}</td>
+                        <td>
+                          <span className={`ev-badge ${getTierColor(e.tier as SupplierTier).bg} ${getTierColor(e.tier as SupplierTier).text}`} style={{ padding: "1px 6px", fontSize: "0.7rem" }}>
+                            {e.tier ? TIER_LABELS[e.tier as SupplierTier] : "—"}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="ev-badge ev-badge-success" style={{ background: "#D1FAE5", color: "#065F46", padding: "1px 6px", fontSize: "0.7rem" }}>
+                            已核准
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20, borderTop: "1px solid #EAF1FB", paddingTop: 16 }}>
+              <button type="button" className="ev-btn ev-btn-primary" onClick={() => setActiveModal(null)}>關閉</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  </div>
   );
 }

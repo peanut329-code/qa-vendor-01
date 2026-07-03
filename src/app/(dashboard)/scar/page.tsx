@@ -6,7 +6,7 @@ import Link from "next/link";
 import { SCARS, SUPPLIERS } from "@/lib/mock-data";
 import { getScarStatusColor, getTierColor, formatDate, scoreColor } from "@/lib/utils";
 import { SCAR_STATUS_LABELS, TIER_LABELS } from "@/types";
-import type { ScarStatus } from "@/types";
+import type { ScarStatus, SupplierTier } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { exportScarsToExcel } from "@/lib/export";
 
@@ -32,10 +32,11 @@ function AccessDenied() {
 export default function ScarPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const [scars, setScars] = useState(SCARS);
+  const [scars, setScars] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState<ScarStatus | "ALL">("ALL");
   const [search, setSearch] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingScar, setEditingScar] = useState<any | null>(null);
 
   const [newScar, setNewScar] = useState({
     scar_number: "",
@@ -44,20 +45,62 @@ export default function ScarPage() {
     category: "品質",
     root_cause: "",
     corrective_action: "",
-    target_date: "2026-06-30",
+    target_date: "2026-07-31",
     status: "open" as ScarStatus,
   });
 
+  // 載入 localStorage 快取
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedScars = localStorage.getItem("scars-custom");
+      let customScars: any[] = [];
+      if (savedScars) {
+        try {
+          customScars = JSON.parse(savedScars);
+        } catch (e) {}
+      }
+
+      const deletedSaved = localStorage.getItem("scars-deleted");
+      let deletedIds: string[] = [];
+      if (deletedSaved) {
+        try { deletedIds = JSON.parse(deletedSaved); } catch (e) {}
+      }
+
+      const editedSaved = localStorage.getItem("scars-edited");
+      let editedMap: Record<string, any> = {};
+      if (editedSaved) {
+        try { editedMap = JSON.parse(editedSaved); } catch (e) {}
+      }
+
+      const allScars = [...SCARS, ...customScars];
+      const updatedScars = allScars
+        .filter((s) => !deletedIds.includes(s.id))
+        .map((s) => {
+          let current = { ...s };
+          if (editedMap[s.id]) {
+            current = { ...current, ...editedMap[s.id] };
+          }
+          return current;
+        });
+      setScars(updatedScars);
+    }
+  }, []);
+
   // 自動產生 SCAR 編號
   useEffect(() => {
-    if (showAddModal) {
-      setNewScar(prev => ({
-        ...prev,
+    if (showAddModal && !editingScar) {
+      setNewScar({
         scar_number: `SCAR-2025-${Math.floor(100 + Math.random() * 900)}`,
         supplier_id: SUPPLIERS[0]?.id || "",
-      }));
+        issue_description: "",
+        category: "品質",
+        root_cause: "",
+        corrective_action: "",
+        target_date: "2026-07-31",
+        status: "open",
+      });
     }
-  }, [showAddModal]);
+  }, [showAddModal, editingScar]);
 
   function handleAddScar(e: React.FormEvent) {
     e.preventDefault();
@@ -79,8 +122,131 @@ export default function ScarPage() {
       updated_at: new Date().toISOString(),
       ...newScar,
     };
+
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("scars-custom");
+      let current: any[] = [];
+      if (saved) {
+        try { current = JSON.parse(saved); } catch (e) {}
+      }
+      current.push(scarToAdd);
+      localStorage.setItem("scars-custom", JSON.stringify(current));
+    }
+
     setScars(prev => [scarToAdd, ...prev]);
     setShowAddModal(false);
+  }
+
+  function openEditModal(scar: any) {
+    setEditingScar(scar);
+    setNewScar({
+      scar_number: scar.scar_number,
+      supplier_id: SUPPLIERS.find((s) => s.name === scar.supplier_name)?.id || SUPPLIERS[0]?.id || "",
+      issue_description: scar.issue_description,
+      category: scar.category,
+      root_cause: scar.root_cause || "",
+      corrective_action: scar.corrective_action || "",
+      target_date: scar.target_date,
+      status: scar.status,
+    });
+    setShowAddModal(true);
+  }
+
+  function closeAddModal() {
+    setShowAddModal(false);
+    setEditingScar(null);
+    setNewScar({
+      scar_number: "",
+      supplier_id: "",
+      issue_description: "",
+      category: "品質",
+      root_cause: "",
+      corrective_action: "",
+      target_date: "2026-07-31",
+      status: "open",
+    });
+  }
+
+  function handleFormSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (editingScar) {
+      handleSaveEdit();
+    } else {
+      handleAddScar(e);
+    }
+  }
+
+  function handleSaveEdit() {
+    if (!editingScar) return;
+    const supplier = SUPPLIERS.find(s => s.id === newScar.supplier_id);
+    if (!supplier) {
+      alert("請選擇供應商");
+      return;
+    }
+    const updated = {
+      ...editingScar,
+      ...newScar,
+      supplier_name: supplier.name,
+      supplier_code: supplier.code,
+      triggered_tier: supplier.tier,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (typeof window !== "undefined") {
+      if (editingScar.id.startsWith("scar-")) {
+        const customSaved = localStorage.getItem("scars-custom");
+        if (customSaved) {
+          try {
+            const list = JSON.parse(customSaved);
+            const idx = list.findIndex((x: any) => x.id === editingScar.id);
+            if (idx > -1) {
+              list[idx] = updated;
+              localStorage.setItem("scars-custom", JSON.stringify(list));
+            }
+          } catch (e) {}
+        }
+      } else {
+        const editedSaved = localStorage.getItem("scars-edited");
+        let editedMap: Record<string, any> = {};
+        if (editedSaved) {
+          try { editedMap = JSON.parse(editedSaved); } catch (e) {}
+        }
+        editedMap[editingScar.id] = updated;
+        localStorage.setItem("scars-edited", JSON.stringify(editedMap));
+      }
+    }
+
+    setScars((prev) => prev.map((s) => (s.id === editingScar.id ? updated : s)));
+    closeAddModal();
+  }
+
+  function handleDeleteScar(scarId: string) {
+    if (!confirm("確定要刪除此 SCAR 矯正行動記錄嗎？")) return;
+
+    if (typeof window !== "undefined") {
+      if (scarId.startsWith("scar-")) {
+        const customSaved = localStorage.getItem("scars-custom");
+        if (customSaved) {
+          try {
+            let list = JSON.parse(customSaved);
+            list = list.filter((x: any) => x.id !== scarId);
+            localStorage.setItem("scars-custom", JSON.stringify(list));
+          } catch (e) {}
+        }
+      } else {
+        const deletedSaved = localStorage.getItem("scars-deleted");
+        let deletedList: string[] = [];
+        if (deletedSaved) {
+          try { deletedList = JSON.parse(deletedSaved); } catch (e) {}
+        }
+        if (!deletedList.includes(scarId)) {
+          deletedList.push(scarId);
+          localStorage.setItem("scars-deleted", JSON.stringify(deletedList));
+        }
+      }
+    }
+
+    setScars((prev) => prev.filter((s) => s.id !== scarId));
   }
 
   useEffect(() => {
@@ -286,7 +452,7 @@ export default function ScarPage() {
                     <td>
                       <span className={`ev-badge ${tierC.bg} ${tierC.text}`}>
                         <span className={`ev-badge-dot ${tierC.dot}`} />
-                        {TIER_LABELS[sc.triggered_tier]}
+                        {TIER_LABELS[sc.triggered_tier as SupplierTier]}
                       </span>
                     </td>
                     <td>
@@ -308,15 +474,37 @@ export default function ScarPage() {
                     <td>
                       <span className={`ev-badge ${statusC.bg} ${statusC.text}`}>
                         <span className={`ev-badge-dot ${statusC.dot}`} />
-                        {SCAR_STATUS_LABELS[sc.status]}
+                        {SCAR_STATUS_LABELS[sc.status as ScarStatus]}
                       </span>
                     </td>
                     <td>
-                      <Link href={`/scar/${sc.id}`}>
-                        <button className="ev-btn ev-btn-ghost" style={{ padding: "4px 10px", fontSize: "0.78rem" }}>
-                          <i className="bi bi-eye" /> 查看
-                        </button>
-                      </Link>
+                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                        <Link href={`/scar/${sc.id}`}>
+                          <button className="ev-btn ev-btn-ghost" style={{ padding: "4px 8px", fontSize: "0.75rem" }} title="查看詳情">
+                            <i className="bi bi-eye" /> 查看
+                          </button>
+                        </Link>
+                        {canExport && (
+                          <>
+                            <button
+                              className="ev-btn ev-btn-ghost"
+                              style={{ padding: "4px 8px", fontSize: "0.75rem", color: "#5B8FD9" }}
+                              onClick={() => openEditModal(sc)}
+                              title="編輯"
+                            >
+                              <i className="bi bi-pencil-fill" />
+                            </button>
+                            <button
+                              className="ev-btn ev-btn-ghost"
+                              style={{ padding: "4px 8px", fontSize: "0.75rem", color: "#EF4444" }}
+                              onClick={() => handleDeleteScar(sc.id)}
+                              title="刪除"
+                            >
+                              <i className="bi bi-trash-fill" />
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -344,17 +532,19 @@ export default function ScarPage() {
             padding: 24, boxShadow: "0 10px 30px rgba(30,58,95,0.15)",
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#1E3A5F" }}>開立 SCAR 矯正要求</div>
+              <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#1E3A5F" }}>
+                {editingScar ? "編輯 SCAR 矯正要求" : "開立 SCAR 矯正要求"}
+              </div>
               <button 
                 type="button"
-                onClick={() => setShowAddModal(false)}
+                onClick={closeAddModal}
                 style={{ background: "none", border: "none", color: "#94AEC8", fontSize: "1.2rem", cursor: "pointer" }}
               >
                 <i className="bi bi-x-lg" />
               </button>
             </div>
 
-            <form onSubmit={handleAddScar}>
+            <form onSubmit={handleFormSubmit}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 18 }}>
                 <div>
                   <label style={{ fontSize: "0.8rem", color: "#5F7A9B", fontWeight: 600, display: "block", marginBottom: 6 }}>SCAR 編號 *</label>
@@ -428,8 +618,10 @@ export default function ScarPage() {
               </div>
 
               <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", borderTop: "1px solid #EAF1FB", paddingTop: 16 }}>
-                <button type="button" className="ev-btn ev-btn-ghost" onClick={() => setShowAddModal(false)}>取消</button>
-                <button type="submit" className="ev-btn ev-btn-primary">確認開立</button>
+                <button type="button" className="ev-btn ev-btn-ghost" onClick={closeAddModal}>取消</button>
+                <button type="submit" className="ev-btn ev-btn-primary">
+                  {editingScar ? "儲存修改" : "確認開立"}
+                </button>
               </div>
             </form>
           </div>
