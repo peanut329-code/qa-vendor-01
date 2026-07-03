@@ -566,50 +566,6 @@ export const AUDIT_EVENTS: AuditEvent[] = [
     related_id: "cert-10",
   },
 
-  // ── 七月 ──
-  {
-    id: "ae-08", title: "ISO/IEC 17025 到期複查 — 光揚光罩科技",
-    supplier_id: "s3", supplier_name: "光揚光罩科技股份有限公司", supplier_code: "SUP-003",
-    event_type: "cert_review", date: "2026-07-10", status: "scheduled",
-    notes: "TAF 實驗室認證屆滿，需向 TAF 申請換發",
-    related_id: "cert-08",
-  },
-  {
-    id: "ae-09", title: "正鑫特殊氣體 Q2-2026 評鑑",
-    supplier_id: "s2", supplier_name: "正鑫特殊氣體有限公司", supplier_code: "SUP-002",
-    event_type: "evaluation", date: "2026-07-18", status: "scheduled",
-    notes: "例行季評，評鑑人：張偉誠，重點：NF₃ 純度一致性",
-  },
-  {
-    id: "ae-10", title: "ISO 9001 到期複查 — 品晶半導體材料",
-    supplier_id: "s1", supplier_name: "品晶半導體材料股份有限公司", supplier_code: "SUP-001",
-    event_type: "cert_review", date: "2026-07-31", status: "scheduled",
-    notes: "BSI ISO 9001:2015 有效期屆滿，確認換版為 ISO 9001:2025",
-    related_id: "cert-02",
-  },
-
-  // ── 八月 ──
-  {
-    id: "ae-11", title: "光揚光罩科技 Q2-2026 評鑑",
-    supplier_id: "s3", supplier_name: "光揚光罩科技股份有限公司", supplier_code: "SUP-003",
-    event_type: "evaluation", date: "2026-08-14", status: "scheduled",
-    notes: "追蹤 Q1 交期改善成效，評鑑人：李美玲",
-  },
-  {
-    id: "ae-12", title: "先進製程化學品 追蹤評鑑",
-    supplier_id: "s5", supplier_name: "先進製程化學品股份有限公司", supplier_code: "SUP-005",
-    event_type: "evaluation", date: "2026-08-25", status: "scheduled",
-    notes: "SCAR 改善後追蹤評鑑，確認品質系統改善成效",
-    related_id: "sc1",
-  },
-
-  // ── 九月 ──
-  {
-    id: "ae-13", title: "先進製程化學品 現場稽核",
-    supplier_id: "s5", supplier_name: "先進製程化學品股份有限公司", supplier_code: "SUP-005",
-    event_type: "audit_visit", date: "2026-09-10", status: "scheduled",
-    notes: "品質部稽核小組前往台中廠區，確認 SPC 管制系統實施狀況",
-  },
 ];
 
 // ================================================================

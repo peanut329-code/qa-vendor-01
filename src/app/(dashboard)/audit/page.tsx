@@ -659,7 +659,7 @@ export default function AuditPage() {
                 let m = TODAY_MONTH + offset;
                 let y = TODAY_YEAR;
                 if (m > 12) { m -= 12; y += 1; }
-                const count = getMonthEvents(AUDIT_EVENTS, y, m).length;
+                const count = getMonthEvents(eventsList, y, m).length;
                 const isCurrent = y === year && m === month;
                 return (
                   <button
@@ -743,7 +743,7 @@ export default function AuditPage() {
                   color: typeFilter === tab.key ? "white" : "#5F7A9B",
                   borderRadius: 9999, padding: "1px 7px", fontSize: "0.72rem", fontWeight: 600,
                 }}>
-                  {tab.key === "ALL" ? AUDIT_EVENTS.length : (typeCounts[tab.key] ?? 0)}
+                  {tab.key === "ALL" ? eventsList.length : (typeCounts[tab.key] ?? 0)}
                 </span>
               </button>
             ))}
