@@ -247,7 +247,7 @@ export default function CertificationsPage() {
       {/* Header */}
       <div className="page-header">
         <div>
-          <div className="page-title">認證效期管理</div>
+          <div className="page-title">品質證書認證效期管理</div>
           <div className="page-subtitle">追蹤各供應商品質認證有效期，提前預警即將到期項目</div>
         </div>
         {canExport && (

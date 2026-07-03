@@ -9,7 +9,7 @@ const PAGE_META: Record<string, { title: string; icon: string }> = {
   "/suppliers":      { title: "供應商管理",     icon: "bi-building-fill" },
   "/evaluations":    { title: "評鑑作業",       icon: "bi-clipboard2-check-fill" },
   "/scar":           { title: "SCAR 管理",      icon: "bi-exclamation-triangle-fill" },
-  "/certifications": { title: "認證效期",       icon: "bi-patch-check-fill" },
+  "/certifications": { title: "品質證書認證效期",       icon: "bi-patch-check-fill" },
   "/audit":          { title: "稽核行事曆",     icon: "bi-calendar3-week-fill" },
   "/asl":            { title: "合格供應商名單&核准範圍", icon: "bi-list-check" },
   "/risk":           { title: "風險評估矩陣",   icon: "bi-diagram-3-fill" },
