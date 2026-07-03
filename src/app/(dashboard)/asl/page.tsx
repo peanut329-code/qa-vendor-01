@@ -134,7 +134,7 @@ export default function AslPage() {
       {/* Header */}
       <div className="page-header">
         <div>
-          <div className="page-title">合格供應商名單（ASL）</div>
+          <div className="page-title">合格供應商名單&核准範圍（ASL）</div>
           <div className="page-subtitle">Approved Supplier List — 追蹤供應商核准狀態、範圍及複評期限</div>
         </div>
         {canExport && (

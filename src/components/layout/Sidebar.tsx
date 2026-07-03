@@ -16,7 +16,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard",      icon: "bi-speedometer2",              label: "儀表板",         allowedRoles: ["super_admin","admin","manager","evaluator","viewer"] },
   { href: "/suppliers",      icon: "bi-building-fill",             label: "供應商管理",     allowedRoles: ["super_admin","admin","manager","evaluator","viewer"] },
-  { href: "/asl",            icon: "bi-list-check",                label: "合格供應商名單", allowedRoles: ["super_admin","admin","manager","viewer"] },
+  { href: "/asl",            icon: "bi-list-check",                label: "合格供應商名單&核准範圍", allowedRoles: ["super_admin","admin","manager","viewer"] },
   { href: "/certifications", icon: "bi-patch-check-fill",          label: "認證效期",       allowedRoles: ["super_admin","admin","manager","viewer"] },
   { href: "/evaluations",    icon: "bi-clipboard2-check-fill",     label: "評鑑作業",       allowedRoles: ["super_admin","admin","manager","evaluator","viewer"] },
   { href: "/audit",          icon: "bi-calendar3-week-fill",       label: "稽核行事曆",     allowedRoles: ["super_admin","admin","manager","viewer"] },
