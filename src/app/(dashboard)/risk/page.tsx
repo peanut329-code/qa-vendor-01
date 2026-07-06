@@ -66,6 +66,61 @@ export default function RiskPage() {
     risk_factors_text: "",
   });
 
+  const [deletedRiskBackup, setDeletedRiskBackup] = useState<{
+    supplierId: string;
+    isCustom: boolean;
+    data?: any;
+  } | null>(null);
+
+  function handleUndoDelete() {
+    if (!deletedRiskBackup) return;
+    const { supplierId, isCustom, data } = deletedRiskBackup;
+
+    if (typeof window !== "undefined") {
+      if (isCustom && data) {
+        const savedCustom = localStorage.getItem("risks-custom");
+        let custom: any[] = [];
+        if (savedCustom) {
+          try { custom = JSON.parse(savedCustom); } catch (e) {}
+        }
+        if (!custom.some(x => x.supplier_id === supplierId)) {
+          custom.push(data);
+          localStorage.setItem("risks-custom", JSON.stringify(custom));
+        }
+      } else {
+        const savedDeleted = localStorage.getItem("risks-deleted");
+        let deleted: string[] = [];
+        if (savedDeleted) {
+          try { deleted = JSON.parse(savedDeleted); } catch (e) {}
+        }
+        const filtered = deleted.filter(id => id !== supplierId);
+        localStorage.setItem("risks-deleted", JSON.stringify(filtered));
+      }
+    }
+
+    if (isCustom && data) {
+      setRisks(prev => [...prev, data]);
+    } else {
+      const original = SUPPLIER_RISKS.find(r => r.supplier_id === supplierId);
+      if (original) {
+        let current = { ...original };
+        if (typeof window !== "undefined") {
+          const savedEdited = localStorage.getItem("risks-edited");
+          let edited: Record<string, any> = {};
+          if (savedEdited) {
+            try { edited = JSON.parse(savedEdited); } catch (e) {}
+          }
+          if (edited[supplierId]) {
+            current = { ...current, ...edited[supplierId] };
+          }
+        }
+        setRisks(prev => [...prev, current]);
+      }
+    }
+
+    setDeletedRiskBackup(null);
+  }
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       const savedCustom = localStorage.getItem("risks-custom");
@@ -104,6 +159,7 @@ export default function RiskPage() {
     return <AccessDenied />;
   }
 
+  const canEdit = user && ["super_admin", "admin", "manager"].includes(user.role);
   const canExport = user && ["super_admin", "admin", "manager"].includes(user.role);
   const selectedRisk = selectedId ? risks.find((r) => r.supplier_id === selectedId) : null;
 
@@ -129,6 +185,7 @@ export default function RiskPage() {
     });
 
   function openAddModal() {
+    if (!canEdit) return;
     setEditingRisk(null);
     setNewRisk({
       supplier_id: SUPPLIERS.find(s => !risks.some(r => r.supplier_id === s.id))?.id || SUPPLIERS[0]?.id || "",
@@ -143,6 +200,7 @@ export default function RiskPage() {
   }
 
   function openEditModal(risk: any) {
+    if (!canEdit) return;
     setEditingRisk(risk);
     setNewRisk({
       supplier_id: risk.supplier_id,
@@ -157,7 +215,11 @@ export default function RiskPage() {
   }
 
   function handleDeleteRisk(supplierId: string) {
+    if (!canEdit) return;
     if (!confirm("確定要刪除此供應商的風險評估嗎？")) return;
+
+    let isCustom = false;
+    let backupData: any = null;
 
     if (typeof window !== "undefined") {
       const savedCustom = localStorage.getItem("risks-custom");
@@ -168,6 +230,8 @@ export default function RiskPage() {
 
       // If it is custom created
       if (custom.some(x => x.supplier_id === supplierId)) {
+        isCustom = true;
+        backupData = custom.find(x => x.supplier_id === supplierId);
         const filteredCustom = custom.filter(x => x.supplier_id !== supplierId);
         localStorage.setItem("risks-custom", JSON.stringify(filteredCustom));
       } else {
@@ -185,10 +249,18 @@ export default function RiskPage() {
 
     setRisks(prev => prev.filter(r => r.supplier_id !== supplierId));
     if (selectedId === supplierId) setSelectedId(null);
+
+    // Save backup for undo
+    setDeletedRiskBackup({
+      supplierId,
+      isCustom,
+      data: backupData,
+    });
   }
 
   function handleSaveRisk(e: React.FormEvent) {
     e.preventDefault();
+    if (!canEdit) return;
     const supplier = SUPPLIERS.find(s => s.id === newRisk.supplier_id);
     if (!supplier) return;
 
@@ -313,9 +385,11 @@ export default function RiskPage() {
               <i className="bi bi-file-earmark-excel" /> Excel 匯出
             </button>
           )}
-          <button className="ev-btn ev-btn-primary" onClick={openAddModal}>
-            <i className="bi bi-plus-lg" /> 新增評估
-          </button>
+          {canEdit && (
+            <button className="ev-btn ev-btn-primary" onClick={openAddModal}>
+              <i className="bi bi-plus-lg" /> 新增評估
+            </button>
+          )}
         </div>
       </div>
 
@@ -658,14 +732,16 @@ export default function RiskPage() {
                     </div>
                   </div>
                 </div>
-                <div style={{ padding: "12px 18px", borderTop: "1px solid #EAF1FB", display: "flex", gap: 10, justifyContent: "flex-end", background: "#FAFCFF" }}>
-                  <button className="ev-btn ev-btn-secondary" style={{ padding: "4px 10px", fontSize: "0.75rem" }} onClick={() => openEditModal(selectedRisk)}>
-                    <i className="bi bi-pencil-fill" /> 編輯
-                  </button>
-                  <button className="ev-btn ev-btn-ghost" style={{ padding: "4px 10px", fontSize: "0.75rem", color: "#EF4444" }} onClick={() => handleDeleteRisk(selectedRisk.supplier_id)}>
-                    <i className="bi bi-trash-fill" /> 刪除
-                  </button>
-                </div>
+                {canEdit && (
+                  <div style={{ padding: "12px 18px", borderTop: "1px solid #EAF1FB", display: "flex", gap: 10, justifyContent: "flex-end", background: "#FAFCFF" }}>
+                    <button className="ev-btn ev-btn-secondary" style={{ padding: "4px 10px", fontSize: "0.75rem" }} onClick={() => openEditModal(selectedRisk)}>
+                      <i className="bi bi-pencil-fill" /> 編輯
+                    </button>
+                    <button className="ev-btn ev-btn-ghost" style={{ padding: "4px 10px", fontSize: "0.75rem", color: "#EF4444" }} onClick={() => handleDeleteRisk(selectedRisk.supplier_id)}>
+                      <i className="bi bi-trash-fill" /> 刪除
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="ev-card" style={{ textAlign: "center", padding: "40px 20px" }}>
@@ -726,7 +802,7 @@ export default function RiskPage() {
                   <th>負責人</th>
                   <th>緩解措施</th>
                   <th style={{ textAlign: "center" }}>最後複評</th>
-                  <th style={{ textAlign: "center" }}>操作</th>
+                  {canEdit && <th style={{ textAlign: "center" }}>操作</th>}
                 </tr>
               </thead>
               <tbody>
@@ -797,26 +873,28 @@ export default function RiskPage() {
                       <td style={{ textAlign: "center", fontFamily: "monospace", fontSize: "0.78rem", color: "#5F7A9B" }}>
                         {r.last_reviewed}
                       </td>
-                      <td style={{ textAlign: "center" }}>
-                        <div style={{ display: "flex", gap: 6, alignItems: "center", justifyContent: "center" }}>
-                          <button 
-                            className="ev-btn ev-btn-ghost" 
-                            style={{ padding: "4px 8px", fontSize: "0.75rem", color: "#5B8FD9" }}
-                            onClick={(e) => { e.stopPropagation(); openEditModal(r); }}
-                            title="編輯"
-                          >
-                            <i className="bi bi-pencil-fill" />
-                          </button>
-                          <button 
-                            className="ev-btn ev-btn-ghost" 
-                            style={{ padding: "4px 8px", fontSize: "0.75rem", color: "#EF4444" }}
-                            onClick={(e) => { e.stopPropagation(); handleDeleteRisk(r.supplier_id); }}
-                            title="刪除"
-                          >
-                            <i className="bi bi-trash-fill" />
-                          </button>
-                        </div>
-                      </td>
+                      {canEdit && (
+                        <td style={{ textAlign: "center" }}>
+                          <div style={{ display: "flex", gap: 6, alignItems: "center", justifyContent: "center" }}>
+                            <button 
+                              className="ev-btn ev-btn-ghost" 
+                              style={{ padding: "4px 8px", fontSize: "0.75rem", color: "#5B8FD9" }}
+                              onClick={(e) => { e.stopPropagation(); openEditModal(r); }}
+                              title="編輯"
+                            >
+                              <i className="bi bi-pencil-fill" />
+                            </button>
+                            <button 
+                              className="ev-btn ev-btn-ghost" 
+                              style={{ padding: "4px 8px", fontSize: "0.75rem", color: "#EF4444" }}
+                              onClick={(e) => { e.stopPropagation(); handleDeleteRisk(r.supplier_id); }}
+                              title="刪除"
+                            >
+                              <i className="bi bi-trash-fill" />
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
@@ -953,6 +1031,36 @@ export default function RiskPage() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* Undo Notification Banner */}
+      {deletedRiskBackup && (
+        <div style={{
+          position: "fixed", bottom: 24, right: 24,
+          background: "#1E3A5F", color: "white",
+          padding: "12px 20px", borderRadius: 10,
+          boxShadow: "0 10px 25px rgba(30,58,95,0.2)",
+          display: "flex", alignItems: "center", gap: 12,
+          zIndex: 2000,
+        }}>
+          <span style={{ fontSize: "0.875rem" }}>已刪除該供應商的風險評估。</span>
+          <button
+            onClick={handleUndoDelete}
+            style={{
+              background: "#5B8FD9", border: "none", color: "white",
+              padding: "4px 10px", borderRadius: 6, cursor: "pointer",
+              fontWeight: 600, fontSize: "0.82rem", transition: "all 0.15s",
+            }}
+          >
+            復原 (Undo)
+          </button>
+          <button
+            onClick={() => setDeletedRiskBackup(null)}
+            style={{ background: "none", border: "none", color: "#94AEC8", cursor: "pointer", padding: 0 }}
+          >
+            <i className="bi bi-x-lg" />
+          </button>
         </div>
       )}
     </div>
