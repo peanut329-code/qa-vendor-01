@@ -249,6 +249,7 @@ export default function AuditPage() {
   }
 
   function handleStatusChange(eventId: string, newStatus: AuditEventStatus) {
+    if (!canEditStatus) return;
     if (typeof window !== "undefined") {
       localStorage.setItem(`audit-status-${eventId}`, newStatus);
     }
@@ -258,6 +259,7 @@ export default function AuditPage() {
   }
 
   function openEditModal(event: AuditEvent) {
+    if (!canEditStatus) return;
     setEditingEvent(event);
     setNewEvent({
       title: event.title,
@@ -283,6 +285,7 @@ export default function AuditPage() {
 
   function handleFormSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!canEditStatus) return;
     if (editingEvent) {
       handleSaveEdit();
     } else {
@@ -291,6 +294,7 @@ export default function AuditPage() {
   }
 
   function handleSaveEdit() {
+    if (!canEditStatus) return;
     if (!editingEvent) return;
     const targetSup = suppliersList.find((s) => s.id === newEvent.supplier_id);
     const updated = {
@@ -334,6 +338,7 @@ export default function AuditPage() {
   }
 
   function handleDeleteEvent(eventId: string) {
+    if (!canEditStatus) return;
     if (!confirm("確定要刪除此稽核行程事項嗎？")) return;
 
     if (typeof window !== "undefined") {
@@ -404,6 +409,7 @@ export default function AuditPage() {
   eventsList.forEach((e) => { typeCounts[e.event_type] = (typeCounts[e.event_type] ?? 0) + 1; });
 
   function handleAddAudit(e: React.FormEvent) {
+    if (!canEditStatus) return;
     e.preventDefault();
     const targetSup = suppliersList.find((s) => s.id === newEvent.supplier_id);
     
@@ -498,9 +504,11 @@ export default function AuditPage() {
               </button>
             ))}
           </div>
-          <button className="ev-btn ev-btn-primary" onClick={() => setShowAddModal(true)}>
-            <i className="bi bi-plus-lg" /> 新增事項
-          </button>
+          {canEditStatus && (
+            <button className="ev-btn ev-btn-primary" onClick={() => setShowAddModal(true)}>
+              <i className="bi bi-plus-lg" /> 新增事項
+            </button>
+          )}
         </div>
       </div>
 
